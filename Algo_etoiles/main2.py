@@ -5,15 +5,15 @@ import csv
 import pygame
 import sys
 
+#LIRE https://www.mdpi.com/1424-8220/20/11/3027#sec4dot3-sensors-20-03027 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 """
 CONSTANTES
 """
 FOV = 90
 L = FOV*pi/180 #fov en radians
 L2 = (L**2)/2
-lamdda = 50 #nombre maximum d'etoiles de "reference"
-
-#LIRE https://www.mdpi.com/1424-8220/20/11/3027#sec4dot3-sensors-20-03027 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+lambd = 50 #nombre maximum d'etoiles de "reference"
 
 class Star:
 
@@ -44,11 +44,6 @@ class Star:
             self.display_name = self.bayer + " " + self.con
         elif self.flam != None: 
             self.display_name = self.flam + " " + self.con
-
-    hip = 123
-
-    def get_hip(self):
-        return self.hip
         
 
 """
@@ -119,34 +114,18 @@ def norm3_sqr(v):
 
 
 '''
-CREATION BASE DE DONNEES
+FONCTIONS IMPORTANTES
 '''
 
-with open("Algo_etoiles/database/UMa_vmagmax5.csv") as csv_file:
-    next(csv_file) #skip la premiere ligne
-    reader = csv.reader(csv_file, delimiter=',')
-
-    DATA_BASE = [Star(intbis(row[0]),       #construction data_base, liste d'objets de type Star
-                      intbis(row[1]),
-                      strbis(row[2]),
-                      strbis(row[3]),
-                      strbis(row[4]),
-                      strbis(row[5]),
-                      fltbis(row[6]),
-                      fltbis(row[7]),
-                      fltbis(row[8]),
-                      strbis(row[11])) for row in reader]
-    csv_file.close()
-
-def closest_nstars(star_list, n, with_zero, dim): #O(len(star_list)*n²) ATTENTION: compare par rapport à (0,0)/(0,0,0) pour comparer à un autre point, mettre en entree les vecteurs "P0->P1"
-    if dim==2: L_dist = [(norm2_sqr(star), star) for star in star_list]
-    elif dim==3: L_dist = [(norm3_sqr(star), star) for star in star_list]
+def closest_nstars(star_list, n, with_zero, dim): #O(len(star_list)*n²) ATTENTION: compare par rapport à (0,0)/(0,0,0), pour comparer à un autre point, mettre en entree les vecteurs "P0->P1"
+    if dim==2: L_dist = [(norm2_sqr(starandvect[1]), starandvect) for starandvect in star_list]
+    elif dim==3: L_dist = [(norm3_sqr(starandvect[1]), starandvect) for starandvect in star_list]
     else: print("????????????")
     best_n = []
 
     for couple in L_dist:
         best_n.append(couple)
-        best_n.sort(key = tuple[0])
+        best_n.sort(key = tuple[0]) #ATTENTION, MARCHE PAS SI DEUX ETOILES DANS LA BASE DE DONNEES ONT LES MEMES COORDONNEES EQUATORIALES (Ex: Xi Ursae Majoris 1 et 2) -> SUPPRIMER LES ETOILES DOUBLES DANS LA BDD
         best_n = best_n[:(n+1)]
 
     if with_zero:
@@ -179,6 +158,9 @@ def calcul_double_triangle_feature(M0,M1,M2,M3): #appelé sur M0,M2,M3,M4 pour c
             n32, 
             )
 
+def calcul_total_feature_length(dtf):
+    return sum([dtf[i] for i in range(6,12)])
+
 def gnomic_projection(D0, star_list):
     
     #PROJECTION SUR LE PLAN TANGEANT AU CERCLE UNITE
@@ -187,35 +169,85 @@ def gnomic_projection(D0, star_list):
         p = dot_prod3(D0.xyz, star.xyz)
         proj_vect = (star.x/p - D0.x), (star.y/p - D0.y), (star.z/p - D0.z)
         if p>0 and norm3_sqr(proj_vect) < L2:
-            C.append(proj_vect)
+            C.append((star, proj_vect))
 
     #CHANGEMENT DE BASE EN PRENANT LETOILE LA PLUS PROCHE
     best_3 = closest_nstars(C, 3, False, 3)
-    A = cross_prod3(D0.xyz, best_3[0]) #rotation de pi/2 de best_3[0]
-    K = norm3_sqr(best_3[0])
+    A = cross_prod3(D0.xyz, best_3[0][1]) #rotation de pi/2 de best_3[0]
+    k = norm3_sqr(best_3[0][1])
 
-    L = [(dot_prod3(coord, best_3[0])/K, dot_prod3(coord, best_3[0])/K) for coord in C]
-    C0 = (0., 0.)
-    C1 = (1., 0.) #projection de best_3[0]
-    C2 = (dot_prod3(best_3[1], best_3[0])/K, dot_prod3(best_3[1], A)/K)
-    C3 = (dot_prod3(best_3[2], best_3[0])/K, dot_prod3(best_3[2], A)/K)
-    DTF = calcul_double_triangle_feature(C0, C1, C2, C3)
+    L = [(starandvect[0], (dot_prod3(starandvect[1], best_3[0][1])/k, dot_prod3(starandvect[1], best_3[0][1])/k)) for starandvect in C]
+    C0 = (D0, (0., 0.))
+    C1 = (best_3[0][0], (1., 0.))
+    C2 = (best_3[1][0], (dot_prod3(best_3[1][1], best_3[0][1])/k, dot_prod3(best_3[1][1], A)/k))
+    C3 = (best_3[2][0], (dot_prod3(best_3[2][1], best_3[0][1])/k, dot_prod3(best_3[2][1], A)/k))
+
+    DTF = calcul_double_triangle_feature(C0[1], C1[1], C2[1], C3[1])
 
     D0.gnomic = L
     D0.double_triangle_feature = DTF
     D0.total_feature_length = calcul_total_feature_length(DTF)
     return L
 
-def changement_base_2d(M0, M1, liste_etoiles):
+def changement_base_2d(M0, M1, image_star_list):
     E1 = vectpp(M0, M1)
     E2 = (-E1[1], E1[0])
-    K = norm2_sqr(E1)
-    return [(dot_prod2(vectpp(M0, P), E1)/K, dot_prod2(vectpp(M0, P), E2)/K) for P in liste_etoiles]
+    k = norm2_sqr(E1)
+    return [(etoile, (dot_prod2(vectpp(M0, etoile), E1)/k, dot_prod2(vectpp(M0, etoile), E2)/k)) for etoile in image_star_list]
+
+def dtf_diff(dtf1, dtf2): #eq (6)
+    return sum([abs(dtf1[i] - dtf2[i]) for i in range(12)])
+
+def select_Ks_stars(data_base, feature_etoile): #eq(7)
+    lFr = calcul_total_feature_length(feature_etoile)
+    A = 200*min([(star.total_feature_length - lFr) for star in data_base])
+
+    data_base_reduced = []
+    for star in data_base:
+        diff = (star.total_feature_length - lFr)
+        if diff < A and diff<50:
+            data_base_reduced.append(star)
+    
+    return data_base_reduced
+
+def identify(D0, image_star_list):
+    r_score = 0
+    matchlist = []
+    for (catalog_star, (x1,y1)) in D0.gnomic:
+        for (etoile_image, (x2,y2)) in image_star_list:
+            if abs(x1-x2)<=0.05 and abs(y1-y2)<=0.05:
+                r_score += 1
+                matchlist.append(catalog_star, etoile_image)
+
+    return r_score, matchlist
+
+'''
+CREATION BASE DE DONNEES
+'''
+
+csv_file = open("Algo_etoiles/database/UMa_vmagmax5.csv")
+next(csv_file) #skip la premiere ligne
+reader = csv.reader(csv_file, delimiter=',')
+
+DATA_BASE = [Star(intbis(row[0]),       #construction data_base, liste d'objets de type Star
+                    intbis(row[1]),
+                    strbis(row[2]),
+                    strbis(row[3]),
+                    strbis(row[4]),
+                    strbis(row[5]),
+                    fltbis(row[6]),
+                    fltbis(row[7]),
+                    fltbis(row[8]),
+                    strbis(row[11])) for row in reader]
+csv_file.close()
+
+for star in DATA_BASE:
+    gnomic_projection(star,  DATA_BASE)
+
 
 """
 TRAITEMENT IMAGE + TRUCS PYGAME
 """
-'''
 image_path = "Algo_etoiles/images/UMa.png"
 image_original = Image.open(image_path).convert('L')
 fps_pygame = 30
@@ -294,50 +326,25 @@ def new_star(image, pos, star_list):
     star_list.append(average_pix(pix_list_of_star(image, pos, []))) #ajoute à star_list le centre de la liste des pixels d'une étoile détectée en pos
     
 image_temp = image.copy()
-liste_etoiles_image = []
+LISTE_ETOILES_IMAGE = []
 for x in range(image.width): #remplit la liste des coordonnéees des étoiles sur l'image
     for y in range(image.height):
         if image.getpixel((x,y)) == 255:
-            new_star(image, (x,y), liste_etoiles_image)
+            new_star(image, (x,y), LISTE_ETOILES_IMAGE)
 
 pygameblitfrompillow(image_original,window)
-for etoile in liste_etoiles_image:
+
+for etoile in LISTE_ETOILES_IMAGE:
     pygame.draw.circle(window, (0,0,255), round_xy(etoile), 2)
 pygame.display.update()
 
-"""
-MATCHING
-"""
+'''
+IDENTIFICATION
 '''
 
-def dtf_diff(dtf1, dtf2): #eq (6)
-    return sum([abs(dtf1[i] - dtf2[i]) for i in range(12)])
-
-def calcul_total_feature_length(feature):
-    return sum([feature[i] for i in range(6,12)])
-
-def select_Ks_stars(data_base, feature_etoile): #eq(7)
-    lFr = calcul_total_feature_length(feature_etoile)
-    A = 200*min([(star.total_feature_length - lFr) for star in data_base])
-
-    data_base_reduced = []
-    for star in data_base:
-        diff = (star.total_feature_length - lFr)
-        if diff < A and diff<50:
-            data_base_reduced.append(star)
-    
-    return data_base_reduced
-
-
-
-'''
-def get_by_bayer(bayer_l, data_base):
-    pass
-    return data_base.index(bayer_l, key = Star.bayer)
 
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-'''
