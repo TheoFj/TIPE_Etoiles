@@ -4,6 +4,7 @@ import csv
 #import matplotlib.pyplot as plt
 import pygame
 import sys
+import random
 
 #LIRE https://www.mdpi.com/1424-8220/20/11/3027#sec4dot3-sensors-20-03027 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -13,7 +14,7 @@ CONSTANTES
 FOV = 90
 L = FOV*pi/180 #fov en radians
 L2 = (L**2)/2
-lambd = 50 #nombre maximum d'etoiles de "reference"
+LAMBD = 20 #nombre maximum d'etoiles de "reference"
 
 class Star:
 
@@ -56,13 +57,6 @@ def strbis(s):
     return None if (s=='' or s=='#N/A') else str(s)
 def fltbis(s):
     return None if (s=='' or s=='#N/A') else float(s)
-
-def fit(pat_d, pat_s, grid_size): #pat_d et pat_s sont des matrices de 0 et de 1
-    score = 0
-    for i in range(grid_size):
-        for j in range(grid_size):
-            score += pat_d[i][j]*pat_s[i][j]
-    return score
 
 def ang_dist(Star1, Star2): #https://en.wikipedia.org/wiki/Angular_distance
     p = dot_prod3(Star1.xyz, Star2.xyz)
@@ -195,6 +189,24 @@ def changement_base_2d(M0, M1, image_star_list):
     k = norm2_sqr(E1)
     return [(etoile, (dot_prod2(vectpp(M0, etoile), E1)/k, dot_prod2(vectpp(M0, etoile), E2)/k)) for etoile in image_star_list]
 
+def double_triangle_2d(M0, image_star_list):
+    starandvect_list = [(M, vectpp(M0, M)) for M in image_star_list]
+    best_4 = closest_nstars(starandvect_list, 4, False, 2)
+    E1 = vectpp(M0, best_4[0][1])
+    E2 = (-E1[1], E1[0])
+    k = norm2_sqr(E1)
+    M0 = (0., 0.)       #PROJECTIONS DANS LA NOUVELLE BASE
+    M1 = (1., 0.)
+    M2 = (dot_prod2(best_4[1][1], E1)/k, dot_prod2(best_4[1][1], E2)/k)
+    M3 = (dot_prod2(best_4[2][1], E1)/k, dot_prod2(best_4[2][1], E2)/k)
+    M4 = (dot_prod2(best_4[3][1], E1)/k, dot_prod2(best_4[3][1], E2)/k)
+
+    F1 = calcul_double_triangle_feature(M0, M1, M2, M3)
+    F2 = calcul_double_triangle_feature(M0, M2, M3, M4)
+
+    return F1, F2
+
+
 def dtf_diff(dtf1, dtf2): #eq (6)
     return sum([abs(dtf1[i] - dtf2[i]) for i in range(12)])
 
@@ -217,7 +229,7 @@ def identify(D0, image_star_list):
         for (etoile_image, (x2,y2)) in image_star_list:
             if abs(x1-x2)<=0.05 and abs(y1-y2)<=0.05:
                 r_score += 1
-                matchlist.append(catalog_star, etoile_image)
+                matchlist.append((catalog_star, etoile_image))
 
     return r_score, matchlist
 
@@ -334,13 +346,59 @@ for x in range(image.width): #remplit la liste des coordonnéees des étoiles su
 
 pygameblitfrompillow(image_original,window)
 
-for etoile in LISTE_ETOILES_IMAGE:
-    pygame.draw.circle(window, (0,0,255), round_xy(etoile), 2)
+for M0 in LISTE_ETOILES_IMAGE:
+    pygame.draw.circle(window, (0,0,255), round_xy(M0), 2)
 pygame.display.update()
 
 '''
 IDENTIFICATION
 '''
+
+def choose_random(liste, lambd):
+    n = len(liste)
+    if(n<4):
+        return "ERREUR TDC"
+    elif (4<=n<lambd):
+        return liste
+    elif (lambd<n):
+        L=[]
+        for i in range(n, n-lambd):
+            L.append(liste.pop(random.randint(0,i-1)))
+        return L
+    
+LISTE_ETOILE_REF = choose_random(LISTE_ETOILES_IMAGE, LAMBD)
+LISTELISTEMATCHS = []
+for M0 in LISTE_ETOILE_REF:
+    starandvect_list = [(M, vectpp(M0, M)) for M in LISTE_ETOILES_IMAGE]
+    M1 = closest_nstars(starandvect_list, 1, False, 2)[0][0]
+    PROJ = changement_base_2d(M0, M1, LISTE_ETOILES_IMAGE)
+    F1, F2 = double_triangle_2d(M0, LISTE_ETOILES_IMAGE)
+    '''
+    L1 = select_Ks_stars(DATA_BASE, F1)
+    L2 = select_Ks_stars(DATA_BASE, F2)
+    print(len(L1), len(L2))'''
+
+    L1 = [(dtf_diff(star.double_triangle_feature, F1), star) for star in DATA_BASE]
+    L2 = [(dtf_diff(star.double_triangle_feature, F2), star) for star in DATA_BASE]
+
+    D01, D02 = min(L1, key=tuple[0]), min(L2, key=tuple[0])
+
+    LISTELISTEMATCHS.append(identify(D01[1], PROJ))
+
+abcdef = LISTELISTEMATCHS[0][1]
+for (etoile_catag, etoile_image) in abcdef:
+    etoile_catag.imagexy = etoile_image
+
+def affiche_noms2(data_base):
+    for star in data_base:
+        if star.imagexy != None:
+            print(star.imagexy, star.display_name)
+            pygame.draw.circle(window, (0,255,0), star.imagexy, 8, 1)
+            window.blit(my_font.render(star.display_name, False, (0, 255, 0)), (star.imagexy[0]-25, star.imagexy[1]-25))
+    
+    pygame.display.update()
+
+affiche_noms2(DATA_BASE)
 
 
 while True:
