@@ -85,7 +85,7 @@ def norm3(v):
 CREATION BASE DE DONNEES
 '''
 
-with open("Algo_etoiles/database/UMa_reduced.csv") as csv_file:
+with open("Algo_etoiles/database/UMa_vmagmax5.csv") as csv_file:
     next(csv_file) #skip la premiere ligne
     reader = csv.reader(csv_file, delimiter=',')
 
@@ -161,7 +161,7 @@ for star in DATA_BASE:  #CALCUL DES GRILLES DE LA BASE DE DONNEES
 """
 TRAITEMENT IMAGE + TRUCS PYGAME
 """
-image_path = "Algo_etoiles/images/UMa.png"
+image_path = "Algo_etoiles/images/UMa2.png"
 image_original = Image.open(image_path).convert('L')
 fps_pygame = 30
 pygame.init()
@@ -188,7 +188,7 @@ def pygameblitfrompillow(image, window):
 
 
 choosing_contrast = True
-threshold = 70
+threshold = 240
 image = Image.open(image_path).convert('L')
 high_contrast(image, threshold)
 
