@@ -16,7 +16,7 @@ FOV = 90
 L = FOV*pi/180 #fov en radians
 L2 = (L**2)/2
 LAMBD = 20 #nombre maximum d'etoiles de "reference"
-IMAGE_PATH = "Algo_etoiles/images/UMa.png"
+IMAGE_PATH = "Algo_etoiles/images/UMa2.png"
 DATA_BASE_PATH = "Algo_etoiles/database/UMa_vmagmax6.csv"
 TEMP_IMAGE_PATH = "temp.png"
 
@@ -43,10 +43,10 @@ class Star:
         #self.etheta = (-sra, cra, 0)
         #self.ephi = (-sdec*cra, -sdec*sra, cdec)
 
-        self.imagexy = None
+        self.imagematch = None
         self.double_triangle_feature = None
         self.total_feature_length = None
-        self.gnomic_projection = None
+        self.gnomic_projection_map = None
 
         self.display_name = None
         if self.bayer != None:
@@ -55,10 +55,10 @@ class Star:
             self.display_name = self.flam + " " + self.con
 
     def affiche(self, window):
-        if self.imagexy != None:
-            print(self.imagexy, self.display_name)
-            pygame.draw.circle(window, (0,255,0), self.imagexy, 8, 1)
-            window.blit(FONT.render(self.display_name, False, (0, 255, 0)), (self.imagexy[0]-25, self.imagexy[1]-25))
+        if self.imagematchxy != None:
+            print(self.imagematchxy, self.display_name)
+            pygame.draw.circle(window, (0,255,0), self.imagematchxy, 8, 1)
+            window.blit(FONT.render(self.display_name, False, (0, 255, 0)), (self.imagematchxy[0]-25, self.imagematchxy[1]-25))
         
 class Etoile_image:
 
@@ -69,6 +69,7 @@ class Etoile_image:
         self.F1_length = None
         self.F2 = None
         self.F2_length = None
+        self.normalized_map = None
 
         self.starmatch = None
 
@@ -151,18 +152,19 @@ def pygameblitfrompillow(image_pillow, window):
 FONCTIONS IMPORTANTES
 '''
 
-def closest_nstars(starandvect_list, n, with_zero, dim): #O(len(starandvect_list)*n²) ATTENTION: compare par rapport à (0,0)/(0,0,0), pour comparer à un autre point, mettre en entree les vecteurs "P0->P1"
+def closest_nstars(starandvect_list, n, with_zero, dim): #O(len(starandvect_list)*n) ATTENTION: compare par rapport à (0,0)/(0,0,0), pour comparer à un autre point, mettre en entree les vecteurs "P0->P1"
     if dim==2: L_dist = [(norm2_sqr(starandvect[1]), starandvect) for starandvect in starandvect_list]
     elif dim==3: L_dist = [(norm3_sqr(starandvect[1]), starandvect) for starandvect in starandvect_list]
     else: print("????????????")
     best_n = []
 
     for couple in L_dist:
-        best_n.append(couple)
-        try:
-            best_n.sort(key = tuple[0]) #ATTENTION, BEUGUE SI DEUX ETOILES SONT A LA MEME DISTANCE CAR IL VA TENTER DE COMPARER PAR RAPPORT AU DEUXIEME ELEMENT ET VA COMPARER DES TYPES INCOMPARABLES
-        except:
-            print("REGLER CE BEUG")
+        i=0
+        while i<(len(best_n)):
+            if couple[0]<=best_n[i][0]:
+                break
+            i+=1
+        best_n.insert(i, couple)
         best_n = best_n[:(n+1)]
 
     if with_zero:
@@ -210,18 +212,20 @@ def calcul_gnomic_dtf_tfl(D0, star_list):
 
     #CHANGEMENT DE BASE EN PRENANT LETOILE LA PLUS PROCHE
     best_3 = closest_nstars(C, 3, False, 3)
-    A = cross_prod3(D0.xyz, best_3[0][1]) #rotation de pi/2 de best_3[0]
+    E1 = best_3[0][1]
+    E2 = cross_prod3(D0.xyz, E1) #rotation de pi/2 de E1
     k = norm3_sqr(best_3[0][1])
 
-    L = [(starandvect[0], (dot_prod3(starandvect[1], best_3[0][1])/k, dot_prod3(starandvect[1], best_3[0][1])/k)) for starandvect in C]
+    L = [(starandvect[0], (dot_prod3(starandvect[1], E1)/k, dot_prod3(starandvect[1], E2)/k)) for starandvect in C]
+
     C0 = (D0, (0., 0.))
     C1 = (best_3[0][0], (1., 0.))
-    C2 = (best_3[1][0], (dot_prod3(best_3[1][1], best_3[0][1])/k, dot_prod3(best_3[1][1], A)/k))
-    C3 = (best_3[2][0], (dot_prod3(best_3[2][1], best_3[0][1])/k, dot_prod3(best_3[2][1], A)/k))
+    C2 = (best_3[1][0], (dot_prod3(best_3[1][1], E1)/k, dot_prod3(best_3[1][1], E2)/k))
+    C3 = (best_3[2][0], (dot_prod3(best_3[2][1], E1)/k, dot_prod3(best_3[2][1], E2)/k))
 
     DTF = calcul_double_triangle_feature(C0[1], C1[1], C2[1], C3[1])
-
-    D0.gnomic_projection = L
+    
+    D0.gnomic_projection_map = L
     D0.double_triangle_feature = DTF
     D0.total_feature_length = calcul_total_feature_length(DTF)
     return L
@@ -232,14 +236,16 @@ def changement_base_2d(M0, M1, image_star_list):
     k = norm2_sqr(E1)
     return [(etoile, (dot_prod2(vectpp(M0.xy, etoile.xy), E1)/k, dot_prod2(vectpp(M0.xy, etoile.xy), E2)/k)) for etoile in image_star_list]
 
-def calcul_dtf_tfl_2d(M0, image_star_list):
+def calcul_map_dtf_tfl_2d(M0, image_star_list):
     starandvect_list = [(M, vectpp(M0.xy, M.xy)) for M in image_star_list]
     best_4 = closest_nstars(starandvect_list, 4, False, 2)
-    E1 = vectpp(M0.xy, best_4[0][1])
+    E1 = best_4[0][1]
     E2 = (-E1[1], E1[0])
     k = norm2_sqr(E1)
 
     #PROJECTIONS DANS LA NOUVELLE BASE
+    L = [(starandvect[0], (dot_prod2(starandvect[1], E1)/k, dot_prod2(starandvect[1], E2)/k)) for starandvect in starandvect_list]
+
     M0xy = (0., 0.)       
     M1xy = (1., 0.)
     M2xy = (dot_prod2(best_4[1][1], E1)/k, dot_prod2(best_4[1][1], E2)/k)
@@ -250,6 +256,7 @@ def calcul_dtf_tfl_2d(M0, image_star_list):
     M0.F2 = F2 = calcul_double_triangle_feature(M0xy, M2xy, M3xy, M4xy)
     M0.F1_length = calcul_total_feature_length(F1)
     M0.F2_length = calcul_total_feature_length(F2)
+    M0.normalized_map = L
 
     return F1, F2
 
@@ -276,11 +283,11 @@ def select_Ks_stars(data_base, etoile): #eq(7)
     
     return data_base_reduced1, data_base_reduced2
 
-def identify(D0, image_star_list):
+def identify(D0, M0):
     r_score = 0
     matchlist = []
-    for (catalog_star, (x1,y1)) in D0.gnomic_projection:
-        for (etoile_image, (x2,y2)) in image_star_list:
+    for (catalog_star, (x1,y1)) in D0.gnomic_projection_map:
+        for (etoile_image, (x2,y2)) in M0.normalized_map:
             if abs(x1-x2)<=0.05 and abs(y1-y2)<=0.05:
                 r_score += 1
                 matchlist.append((catalog_star, etoile_image))
@@ -332,6 +339,13 @@ def high_contrast(image, threshold):
 image=Image.open(IMAGE_PATH).convert('L')
 high_contrast(image, 230)
 
+def drawmap(map):
+    img = Image.new('1',(300,300),0)
+    for starandvect in map:
+        x,y = round(starandvect[1][0]*30+150), round(starandvect[1][1]*30+150)
+        if 0<=x<300 and 0<=y<300:
+            img.putpixel((x,y), 1)
+    img.show()
 
 """
 CHOIX DU CONTRASTE
@@ -398,7 +412,7 @@ def new_star(image, pos, star_list):
     star_list.append(Etoile_image(average_pix(pix_list_of_star(image, pos, [])))) #ajoute à star_list le centre de la liste des pixels d'une étoile détectée en pos
 
 
-image_temp = image.copy() #utile cart la fonction "new_star" a besoin de modifier l'image
+image_temp = image.copy() #utile car la fonction "new_star" a besoin de modifier l'image
 LISTE_ETOILES_IMAGE = []
 for x in range(image.width): #remplit la liste des coordonnéees des étoiles sur l'image
     for y in range(image.height):
@@ -434,8 +448,13 @@ def affiche_noms(liste_etoiles_image):
         etoile.affiche(WINDOW)
     pygame.display.update()
 
+'''
+for star in DATA_BASE:
+    drawmap(star.gnomic_projection_map)
+'''
+
 for etoile in LISTE_ETOILES_IMAGE:
-    calcul_dtf_tfl_2d(etoile, LISTE_ETOILES_IMAGE)
+    calcul_map_dtf_tfl_2d(etoile, LISTE_ETOILES_IMAGE)
 for etoile in LISTE_ETOILES_IMAGE:
     print(len(select_Ks_stars(DATA_BASE, etoile)[0]))
 
