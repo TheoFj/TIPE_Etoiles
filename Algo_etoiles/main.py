@@ -5,26 +5,26 @@ import csv
 import pygame
 import sys
 import random
-#import time
 
-#LIRE https://www.mdpi.com/1424-8220/20/11/3027#sec4dot3-sensors-20-03027 
+#LIRE https://www.mdpi.com/1424-8220/20/11/3027
 
 """
 CONSTANTES
 """
 FOV = 90
-L = FOV*pi/180 #fov en radians
-L2 = (L**2)/2
+L = FOV*pi/180 #fov en radians 
+L2 = (L**2)/2 #rayon du disque des etoiles prises en compte dans "calcul_gnomic_dtf_tfl" (cf. 4.1 https://www.mdpi.com/1424-8220/20/11/3027)
 LAMBD = 50 #nombre maximum d'etoiles de "reference"
 IMAGE_PATH = "Algo_etoiles/images/UMa2.png"
 DATA_BASE_PATH = "Algo_etoiles/database/UMa_vmagmax6.csv"
 TEMP_IMAGE_PATH = "temp.png"
+Id_threshold = 0.05
 
 
 """
 TYPES
 """
-class Star:
+class Star: #Type enregistrement pour les étoiles de la base de données
 
     def __init__(self, id, hip, bayer, flam, con, proper, ra, dec, mag, wikipedia): #ra et dec en heures et degres dans le csv
         self.id = id
@@ -60,7 +60,7 @@ class Star:
             pygame.draw.circle(window, (0,255,0), self.imagematch.xy, 8, 1)
             window.blit(FONT.render(self.display_name, False, (0, 255, 0)), (self.imagematch.xy[0]-25, self.imagematch.xy[1]-25))
         
-class Etoile_image:
+class Etoile_image: #Type enregistrement pour les étoiles de l'image
 
     def __init__(self, pos):
         self.xy = self.x, self.y = pos
@@ -87,6 +87,7 @@ class Etoile_image:
 """
 FONCTIONS PRATIQUES
 """ 
+#certaines fonctions ne sont pas utilisees
 
 def intbis(s):
     return None if (s=='' or s=='#N/A') else int(s)
@@ -111,7 +112,7 @@ def angle_2d(v1,v2, norm_prod):
         return pi
     return acos(costheta)
 
-
+#fonctions sur vecteurs de dimension 2
 def flat_dist2(pos1, pos2):
     return sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)
 def flat_dist2_sqr(pos1, pos2):
@@ -127,7 +128,7 @@ def round_xy(coord):
 def vectpp(p1, p2):
     return (p2[0] - p1[0], p2[1] - p1[1])
 
-
+#fonctions sur vecteurs de dimension 3
 def flat_dist3(pos1, pos2):
     return sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2 + (pos1[2] - pos2[2])**2)
 def flat_dist3_sqr(pos1, pos2):
@@ -143,7 +144,7 @@ def norm3(v):
 def norm3_sqr(v):
     return v[0]**2 + v[1]**2 + v[2]**2
 
-def pygameblitfrompillow(image_pillow, window):
+def pygameblitfrompillow(image_pillow, window): #affiche sur l'ecran pygame une image de type pillow.Image
     image_pillow.save(TEMP_IMAGE_PATH)
     image_pygame = pygame.image.load(TEMP_IMAGE_PATH)
     window.blit(image_pygame,(0,0))
@@ -152,7 +153,11 @@ def pygameblitfrompillow(image_pillow, window):
 FONCTIONS IMPORTANTES
 '''
 
-def closest_nstars(starandvect_list, n, with_zero, dim): #O(len(starandvect_list)*n) ATTENTION: compare par rapport à (0,0)/(0,0,0), pour comparer à un autre point, mettre en entree les vecteurs "P0->P1"
+def closest_nstars(starandvect_list, n, with_zero, dim):
+    '''
+    Renvoie les n vecteurs les plus proches de 0, en dimension 2 ou 3, en incluant le 0 ou non.
+    O(len(starandvect_list)*n) ATTENTION: compare par rapport à (0,0)/(0,0,0), pour comparer à un autre point, mettre en entree les vecteurs "P0->P1"
+    '''
     if dim==2: L_dist = [(norm2_sqr(starandvect[1]), starandvect) for starandvect in starandvect_list]
     elif dim==3: L_dist = [(norm3_sqr(starandvect[1]), starandvect) for starandvect in starandvect_list]
     else: print("????????????")
@@ -173,6 +178,9 @@ def closest_nstars(starandvect_list, n, with_zero, dim): #O(len(starandvect_list
         return [best_n[i][1] for i in range(1,n+1)] #on ne renvoie pas le numero 0 car il s'agit de l'etoile "pos"
     
 def calcul_double_triangle_feature(M0, M1, M2, M3): #appelé sur M0,M2,M3,M4 pour construire F2
+    '''
+    Calcule les donnees longueurs et angles à comparer (cf. section 4.3 https://www.mdpi.com/1424-8220/20/11/3027#sec4dot3-sensors-20-03027 )
+    '''
     v01 = vectpp(M0, M1); v10 = (-v01[0],-v01[1])
     v02 = vectpp(M0, M2); v20 = (-v02[0],-v02[1])
     v03 = vectpp(M0, M3); v30 = (-v03[0],-v03[1])
@@ -201,8 +209,16 @@ def calcul_total_feature_length(dtf):
     return sum([dtf[i] for i in range(6,12)])
 
 def calcul_gnomic_dtf_tfl(D0, star_list):
+    '''
+    Calculs à faire sur chaque étoile de la base donnée, 
+    à faire idéalement dans un code séparé pour ne pas le recalculer à chaque fois
+    car ces calculs sont indépendants de l'imaage.
+    '''
     
     #PROJECTION SUR LE PLAN TANGEANT AU CERCLE UNITE
+    #permet de simuler une photo prise par un capteur plan
+    # (cf. https://www.mdpi.com/1424-8220/20/11/3027 section 4.1)
+    # (cf. __ a completer __)
     C = []
     for star in star_list:
         p = dot_prod3(D0.xyz, star.xyz)
@@ -211,6 +227,8 @@ def calcul_gnomic_dtf_tfl(D0, star_list):
             C.append((star, proj_vect))
 
     #CHANGEMENT DE BASE EN PRENANT LETOILE LA PLUS PROCHE
+    # (cf. https://www.mdpi.com/1424-8220/20/11/3027 section 4.2)
+    # permet d'aligner les systemes de coordonnees basee de donnee/image afin d'avoir des donnees comparables
     best_3 = closest_nstars(C, 3, False, 3)
     E1 = best_3[0][1]
     E2 = cross_prod3(D0.xyz, E1) #rotation de pi/2 de E1
@@ -225,18 +243,24 @@ def calcul_gnomic_dtf_tfl(D0, star_list):
 
     DTF = calcul_double_triangle_feature(C0[1], C1[1], C2[1], C3[1])
     
+    #Enregistrement dans l'objet Star D0
     D0.gnomic_projection_map = L
     D0.double_triangle_feature = DTF
     D0.total_feature_length = calcul_total_feature_length(DTF)
-    return L
+    return
 
 def changement_base_2d(M0, M1, image_star_list):
+    #Normalisation de la liste des coordonnees des etoiles en fonction de deux points/etoiles de l'image
     E1 = vectpp(M0.xy, M1.xy)
     E2 = (-E1[1], E1[0])
     k = norm2_sqr(E1)
     return [(etoile, (dot_prod2(vectpp(M0.xy, etoile.xy), E1)/k, dot_prod2(vectpp(M0.xy, etoile.xy), E2)/k)) for etoile in image_star_list]
 
 def calcul_map_dtf_tfl_2d(M0, image_star_list):
+    '''
+    Calculs à faire sur chaque étoile (ou une partie des étoiles) de l'image
+    '''
+
     starandvect_list = [(M, vectpp(M0.xy, M.xy)) for M in image_star_list]
     best_4 = closest_nstars(starandvect_list, 4, False, 2)
     E1 = best_4[0][1]
@@ -258,10 +282,10 @@ def calcul_map_dtf_tfl_2d(M0, image_star_list):
     M0.F2_length = calcul_total_feature_length(F2)
     M0.normalized_map = L
 
-    return F1, F2
+    return
 
 
-def dtf_diff(dtf1, dtf2): #eq (6)
+def dtf_diff(dtf1, dtf2): #cf. eq(6) de https://www.mdpi.com/1424-8220/20/11/3027
     return sum([abs(dtf1[i] - dtf2[i]) for i in range(12)])
 
 def select_Ks_stars(data_base, etoile): #eq(7) MARCHE TRES TRES MAL
@@ -284,11 +308,17 @@ def select_Ks_stars(data_base, etoile): #eq(7) MARCHE TRES TRES MAL
     return data_base_reduced1, data_base_reduced2
 
 def identify(D0, M0):
+    '''
+        Une fois que des etoiles D0 et M0 semblent correspondre via la methode des doubles triangles,
+        on compare leurs projections normalisees afin d'établir des correspondances,
+        le résuultat final est l'identification avec le meilleur "r_score": le nombre d'étoiles identifiées.
+    '''
+
     r_score = 0
     matchlist = []
     for (etoile_image, (x2,y2)) in M0.normalized_map:
         for (catalog_star, (x1,y1)) in D0.gnomic_projection_map:
-            if abs(x1-x2)<=0.05 and abs(y1-y2)<=0.05:
+            if abs(x1-x2)<=Id_threshold and abs(y1-y2)<=Id_threshold:
                 r_score += 1
                 matchlist.append((catalog_star, etoile_image))
                 break #a ameliorer
@@ -296,14 +326,14 @@ def identify(D0, M0):
     return r_score, matchlist
 
 '''
-CREATION BASE DE DONNEES
+IMPORTATION ET CALCULS SUR LA BASE DE DONNEES
 '''
 
 csv_file = open(DATA_BASE_PATH)
 next(csv_file) #skip la premiere ligne
 reader = csv.reader(csv_file, delimiter=',')
 
-DATA_BASE = [Star(intbis(row[0]),       #construction data_base, liste d'objets de type Star
+DATA_BASE = [Star(intbis(row[0]),       #construction de DATA_BASE: liste d'objets de type Star
                     intbis(row[1]),
                     strbis(row[2]),
                     strbis(row[3]),
@@ -320,72 +350,35 @@ for star in DATA_BASE:
 
 
 """
-TRAITEMENT IMAGE + TRUCS PYGAME
+TRAITEMENT IMAGE + INITIALISATION PYGAME
 """
-image_original = Image.open(IMAGE_PATH).convert('L')
+image_original = Image.open(IMAGE_PATH).convert('L') #mode L: nuances de gris
 fps_pygame = 30
 pygame.init()
 pygame.font.init()
 WINDOW = pygame.display.set_mode(image_original.size)
 FONT = pygame.font.SysFont('Arial', 15)
 
-def high_contrast(image, threshold):
+def high_contrast(image, brightness_threshold): #Conversion en noir et blanc avec contraste personnalise
     for x in range(image.width):
         for y in range(image.height):
-            if image.getpixel((x,y))> threshold:
+            if image.getpixel((x,y))> brightness_threshold:
                 image.putpixel((x,y), 255)
             else:
                 image.putpixel((x,y), 0)
+    image.convert("1") #mode 1: image binaire, noir et blanc
 
 image=Image.open(IMAGE_PATH).convert('L')
 high_contrast(image, 230)
 
 def drawmap(map):
+    #affiche un apperçu des etoiles dans le repere normalisé autour d'une etoile
     img = Image.new('1',(300,300),0)
     for starandvect in map:
         x,y = round(starandvect[1][0]*30+150), round(starandvect[1][1]*30+150)
         if 0<=x<300 and 0<=y<300:
             img.putpixel((x,y), 1)
     img.show()
-
-"""
-CHOIX DU CONTRASTE
-"""
-'''
-def high_contrast(image, threshold):
-    for x in range(image.width):
-        for y in range(image.height):
-            if image.getpixel((x,y))> threshold:
-                image.putpixel((x,y), 255)
-            else:
-                image.putpixel((x,y), 0)
-
-choosing_contrast = True
-threshold = 70
-image = Image.open(IMAGE_PATH).convert('L')
-high_contrast(image, threshold)
-
-pygameblitfrompillow(image, window)
-pygame.display.update()
-
-while choosing_contrast:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            choosing_contrast = False
-    if pygame.key.get_pressed()[pygame.K_UP]:
-        threshold -= 5
-    elif pygame.key.get_pressed()[pygame.K_DOWN]:
-        threshold += 5
-    if pygame.key.get_pressed()[pygame.K_UP] or pygame.key.get_pressed()[pygame.K_DOWN]:
-        image = image_original.copy()
-        high_contrast(image, threshold)
-        pygameblitfrompillow(image, window)
-        pygame.display.update()
-    pygame.time.Clock().tick(fps_pygame)
-
-image.convert("1")
-#image.show()
-'''
 
 """
 DETECTION ETOILES
@@ -420,9 +413,9 @@ for x in range(image.width): #remplit la liste des coordonnéees des étoiles su
         if image.getpixel((x,y)) == 255:
             new_star(image, (x,y), LISTE_ETOILES_IMAGE)
 
-pygameblitfrompillow(image_original,WINDOW)
+pygameblitfrompillow(image_original, WINDOW)
 
-for etoile in LISTE_ETOILES_IMAGE:
+for etoile in LISTE_ETOILES_IMAGE: #affichage
     pygame.draw.circle(WINDOW, (0,0,255), round_xy(etoile.xy), 2)
 pygame.display.update()
 
@@ -431,6 +424,7 @@ IDENTIFICATION
 '''
 
 def choose_random(liste_etoiles, lambd):
+    #choisit "lambd" etoiles au hasard sur l'image
     n = len(liste_etoiles)
     if(n<4):
         print("PAS ASSEZ D'ETOILES")
@@ -443,13 +437,14 @@ def choose_random(liste_etoiles, lambd):
             L.append(liste_etoiles.pop(random.randint(0,i-1))) #detruit liste_etoiles ??? a refaire
         return L
 
-
 def affiche_noms(liste_etoiles_image):
+    #affiche le nom de l'etoile identifiee pour chaque etoile de l'image
     for etoile in liste_etoiles_image:
         etoile.affiche(WINDOW)
     pygame.display.update()
 
 def closest_dtf(dtf, data_base):
+    #renvoie l'objet Star de data_base avec la feature la plus proche de dtf
     best = data_base[0]
     mindiff = dtf_diff(best.double_triangle_feature, dtf)
     for star in data_base:
@@ -459,6 +454,7 @@ def closest_dtf(dtf, data_base):
     return best
 
 def get_by_attribute(data_base, attribute, val): #à coder plus proprement aled
+    """
     if attribute == "bayer":
         for star in data_base:
             if star.bayer == val:
@@ -471,6 +467,8 @@ def get_by_attribute(data_base, attribute, val): #à coder plus proprement aled
         for star in data_base:
             if star.hip == val:
                 return star
+    """
+    return next((v for v in data_base if v[attribute] == val), [None])
 
 '''
 for star in DATA_BASE:
@@ -499,11 +497,11 @@ for (star, etoile) in bestmatchlist:
 affiche_noms(LISTE_ETOILES_IMAGE)
 
 
-
 '''
-Del = get_by_attribute(DATA_BASE, "bayer", "Del")
+Del = get_by_attribute(DATA_BASE, Star.bayer, "Del")
 drawmap(Del.gnomic_projection_map)
 drawmap(LISTE_ETOILES_IMAGE[3].normalized_map)
+
 '''
 
 
