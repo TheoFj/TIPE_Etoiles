@@ -1,11 +1,11 @@
 from math import *
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import csv
 #import matplotlib.pyplot as plt
-import pygame
 import sys
 import random
 
+#DEGAGER PYGAME
 #LIRE https://www.mdpi.com/1424-8220/20/11/3027
 
 """
@@ -19,6 +19,7 @@ IMAGE_PATH = "Algo_etoiles/images/UMa2.png"
 DATA_BASE_PATH = "Algo_etoiles/database/UMa_vmagmax6.csv"
 TEMP_IMAGE_PATH = "temp.png"
 Id_threshold = 0.05
+ARIAL = ImageFont.truetype("arial.ttf")
 
 
 """
@@ -350,14 +351,9 @@ for star in DATA_BASE:
 
 
 """
-TRAITEMENT IMAGE + INITIALISATION PYGAME
+TRAITEMENT IMAGE
 """
 image_original = Image.open(IMAGE_PATH).convert('L') #mode L: nuances de gris
-fps_pygame = 30
-pygame.init()
-pygame.font.init()
-WINDOW = pygame.display.set_mode(image_original.size)
-FONT = pygame.font.SysFont('Arial', 15)
 
 def high_contrast(image, brightness_threshold): #Conversion en noir et blanc avec contraste personnalise
     for x in range(image.width):
@@ -413,11 +409,12 @@ for x in range(image.width): #remplit la liste des coordonnéees des étoiles su
         if image.getpixel((x,y)) == 255:
             new_star(image, (x,y), LISTE_ETOILES_IMAGE)
 
-pygameblitfrompillow(image_original, WINDOW)
+draw = ImageDraw.Draw(image_original)
+draw.font = ARIAL
 
 for etoile in LISTE_ETOILES_IMAGE: #affichage
-    pygame.draw.circle(WINDOW, (0,0,255), round_xy(etoile.xy), 2)
-pygame.display.update()
+    draw.ellipse([(round(etoile.x)-1, round(etoile.y)-1), (round(etoile.x)+1, round(etoile.y)+1)], (0,0,255))
+draw.show("MARCHE PAS, UTILISER ALPHA_COMPOSITE")
 
 '''
 IDENTIFICATION
