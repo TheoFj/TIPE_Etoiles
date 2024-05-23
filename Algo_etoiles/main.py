@@ -16,8 +16,8 @@ FOV = 90
 L = FOV*pi/180 #fov en radians
 L2 = (L**2)/2
 LAMBD = 50 #nombre maximum d'etoiles de "reference"
-IMAGE_PATH = "Algo_etoiles/images/UMa.png"
-DATA_BASE_PATH = "Algo_etoiles/database/UMa_reduced.csv"
+IMAGE_PATH = "Algo_etoiles/images/UMa2.png"
+DATA_BASE_PATH = "Algo_etoiles/database/UMa_vmagmax6.csv"
 TEMP_IMAGE_PATH = "temp.png"
 
 
