@@ -1,11 +1,9 @@
 from math import *
 from PIL import Image, ImageDraw, ImageFont
 import csv
-#import matplotlib.pyplot as plt
-import sys
 import random
+#import matplotlib.pyplot as plt
 
-#DEGAGER PYGAME
 #LIRE https://www.mdpi.com/1424-8220/20/11/3027
 
 """
@@ -18,9 +16,24 @@ LAMBD = 50 #nombre maximum d'etoiles de "reference"
 IMAGE_PATH = "Algo_etoiles/images/UMa2.png"
 DATA_BASE_PATH = "Algo_etoiles/database/UMa_vmagmax6.csv"
 TEMP_IMAGE_PATH = "temp.png"
-Id_threshold = 0.05
-ARIAL = ImageFont.truetype("arial.ttf")
+ID_THRESHOLD = 0.05
 
+"""
+IMPORTATION ET TRAITEMENT D'IMAGE
+"""
+
+DISPLAY_CIRCLE_RADIUS = 6 #rayon des cercles lors de l'affichage des etoiles trouvees
+FONT = ImageFont.truetype(font = "arial.ttf", size = 12)
+
+BLACK_WHITE_THRESHOLD = 230
+def pixel_to_NB(pixel): #permet de choisir le contraste de la conversion en noir et blanc
+    return 1 if pixel > BLACK_WHITE_THRESHOLD else 0
+
+IMAGE_ORIGINAL = Image.open(IMAGE_PATH).convert('L')
+IMAGE_GRAYSCALE = IMAGE_ORIGINAL.convert('L')
+IMAGE_NB = IMAGE_GRAYSCALE.point(pixel_to_NB, mode='1')
+
+SIZE = WIDTH, HEIGHT = IMAGE_ORIGINAL.size
 
 """
 TYPES
@@ -28,60 +41,69 @@ TYPES
 class Star: #Type enregistrement pour les étoiles de la base de données
 
     def __init__(self, id, hip, bayer, flam, con, proper, ra, dec, mag, wikipedia): #ra et dec en heures et degres dans le csv
-        self.id = id
-        self.hip = hip
-        self.bayer = bayer
-        self.flam = flam
-        self.con = con
-        self.proper = proper
-        self.ra = ra*pi/12      #conversion heures(15deg) ->radians
-        self.dec = dec*pi/180   #conversion degres ->radians
-        self.mag = mag
-        self.wiki = wikipedia
+        self.id = id            #Identifiant dans la base de donnéee
+        self.hip = hip          #Identifiant hipparcos (si il existe)
+        self.bayer = bayer      #Désignation de bayer  (si elle existe)
+        self.flam = flam        #Désignation de flamsteed (si elle existe)
+        self.con = con          #Abréviation de la constellation du système international
+        self.proper = proper    #Nom commun (si il existe)
+        self.ra = ra*pi/12      #Ascention droite avec conversion heures(15deg)->radians
+        self.dec = dec*pi/180   #Déclinaison avec conversion degrés->radians
+        self.mag = mag          #Magnitude (correspond en gros à du -log(luminosité))
+        self.wiki = wikipedia   #Lien vers la page wikipedia (si elle existe)
 
         cdec, sdec, cra, sra = cos(self.dec), sin(self.dec), cos(self.ra), sin(self.ra)
-        self.xyz = (self.x, self.y, self.z) = (cdec*cra, cdec*sra, sdec) #position sur la sphere celeste unite
-        #self.etheta = (-sra, cra, 0)
-        #self.ephi = (-sdec*cra, -sdec*sra, cdec)
+        self.xyz = (self.x, self.y, self.z) = (cdec*cra, cdec*sra, sdec) #Position sur la sphere celeste unité
 
-        self.imagematch = None
-        self.double_triangle_feature = None
-        self.total_feature_length = None
-        self.gnomic_projection_map = None
+        self.imagematch = None                  #Objet Etoile_Image correspondant si trouvé
+        self.double_triangle_feature = None     #Longueurs et angles des deux triangles formé par les 4 etoiles les plus proches
+        self.total_feature_length = None        #Longueur totale des segments de double_triangle_feature
+        self.gnomic_projection_map = None       #Etoiles proches et leurs coordonnees dans la base adaptée à cet étoile
 
-        self.display_name = None
+        self.display_name = None    #Nom à afficher si trouvée (bayer, flamsteed ou id)
         if self.bayer != None:
             self.display_name = self.bayer + " " + self.con
         elif self.flam != None: 
             self.display_name = self.flam + " " + self.con
+        else:
+            self.display_name = str(self.id)
 
-    def affiche(self, window):
+    def draw_name(self, drawing_instance):
         if self.imagematch.xy != None:
-            #print(self.imagematch.xy, self.display_name)
-            pygame.draw.circle(window, (0,255,0), self.imagematch.xy, 8, 1)
-            window.blit(FONT.render(self.display_name, False, (0, 255, 0)), (self.imagematch.xy[0]-25, self.imagematch.xy[1]-25))
+            x, y = self.imagematch.xy
+            r = DISPLAY_CIRCLE_RADIUS
+            textxy = (x, y-r-4)
+            circle_x0y0x1y1 = (x-r, y-r, x+r, y+r)
+
+            drawing_instance.text(textxy, self.display_name, font = FONT, fill = (0, 255, 0, 255), anchor = "ms") #ms: middle baseline
+            drawing_instance.ellipse(circle_x0y0x1y1, outline = (0, 255, 0, 255), width = 1)
         
 class Etoile_image: #Type enregistrement pour les étoiles de l'image
 
     def __init__(self, pos):
         self.xy = self.x, self.y = pos
 
-        self.F1 = None
-        self.F1_length = None
-        self.F2 = None
-        self.F2_length = None
-        self.normalized_map = None
+        self.F1 = None                  #Première feature
+        self.F1_length = None           #Longueur totale des segments de F1
+        self.F2 = None                  #Deuxième feature
+        self.F2_length = None           #Longueur totale des segments de F2
+        self.normalized_map = None      #Etoiles proches et leurs coordonnees dans la base adaptée à cet étoile
 
-        self.starmatch = None
+        self.starmatch = None           #Objet Star correspondant si trouvé
 
-    def affiche(self, window):
+    def draw_name(self, drawing_instance):
+        x, y = self.xy
+        r = DISPLAY_CIRCLE_RADIUS
+        textxy = (x, y-r-4)
+        circle_x0y0x1y1 = (x-r, y-r, x+r, y+r)
+
         if self.starmatch != None:
-            print(self.xy, self.starmatch)
-            pygame.draw.circle(window, (0,255,0), self.xy, 8, 1)
-            window.blit(FONT.render(self.starmatch.display_name, False, (0, 255, 0)), (self.xy[0]-25, self.xy[1]-25))
+            #print(self.xy, self.starmatch)
+            drawing_instance.text(textxy, self.starmatch.display_name, font = FONT, fill = (0, 255, 0, 255), anchor = "ms") #ms: middle baseline
+            drawing_instance.ellipse(circle_x0y0x1y1, outline = (0, 255, 0, 255), width = 1)
         else:
-            print(self.xy, None)
-            pygame.draw.circle(window, (255,0,0), self.xy, 8, 1)
+            #print(self.xy, None)
+            drawing_instance.ellipse(circle_x0y0x1y1, outline = (255, 0, 0, 255), width = 1)
 
 
 
@@ -116,7 +138,7 @@ def angle_2d(v1,v2, norm_prod):
 #fonctions sur vecteurs de dimension 2
 def flat_dist2(pos1, pos2):
     return sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)
-def flat_dist2_sqr(pos1, pos2):
+def flat_dist2_sqr(pos1, pos2): #permet d'eviter de calculer une racine
     return (pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2
 def dot_prod2(u, v):
     return u[0]*v[0] + u[1]*v[1]
@@ -132,7 +154,7 @@ def vectpp(p1, p2):
 #fonctions sur vecteurs de dimension 3
 def flat_dist3(pos1, pos2):
     return sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2 + (pos1[2] - pos2[2])**2)
-def flat_dist3_sqr(pos1, pos2):
+def flat_dist3_sqr(pos1, pos2): #permet d'eviter de calculer une racine
     return (pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1] )**2 + (pos1[2] - pos2[2])**2
 def dot_prod3(u, v):
     return u[0]*v[0] + u[1]*v[1] + u[2]*v[2]
@@ -144,11 +166,6 @@ def norm3(v):
     return sqrt(v[0]**2 + v[1]**2 + v[2]**2)
 def norm3_sqr(v):
     return v[0]**2 + v[1]**2 + v[2]**2
-
-def pygameblitfrompillow(image_pillow, window): #affiche sur l'ecran pygame une image de type pillow.Image
-    image_pillow.save(TEMP_IMAGE_PATH)
-    image_pygame = pygame.image.load(TEMP_IMAGE_PATH)
-    window.blit(image_pygame,(0,0))
 
 '''
 FONCTIONS IMPORTANTES
@@ -319,7 +336,7 @@ def identify(D0, M0):
     matchlist = []
     for (etoile_image, (x2,y2)) in M0.normalized_map:
         for (catalog_star, (x1,y1)) in D0.gnomic_projection_map:
-            if abs(x1-x2)<=Id_threshold and abs(y1-y2)<=Id_threshold:
+            if abs(x1-x2)<=ID_THRESHOLD and abs(y1-y2)<=ID_THRESHOLD:
                 r_score += 1
                 matchlist.append((catalog_star, etoile_image))
                 break #a ameliorer
@@ -353,19 +370,6 @@ for star in DATA_BASE:
 """
 TRAITEMENT IMAGE
 """
-image_original = Image.open(IMAGE_PATH).convert('L') #mode L: nuances de gris
-
-def high_contrast(image, brightness_threshold): #Conversion en noir et blanc avec contraste personnalise
-    for x in range(image.width):
-        for y in range(image.height):
-            if image.getpixel((x,y))> brightness_threshold:
-                image.putpixel((x,y), 255)
-            else:
-                image.putpixel((x,y), 0)
-    image.convert("1") #mode 1: image binaire, noir et blanc
-
-image=Image.open(IMAGE_PATH).convert('L')
-high_contrast(image, 230)
 
 def drawmap(map):
     #affiche un apperçu des etoiles dans le repere normalisé autour d'une etoile
@@ -388,13 +392,13 @@ def pix_list_of_star(image, pos, pixel_list): #détecte tous les pixels blancs "
     image.putpixel(pos, 0)
     x,y = pos
     width,height = image.size
-    if x+1<width and image.getpixel((x+1,y)) == 255:
+    if x+1<width and image.getpixel((x+1,y)) == 1:
         pix_list_of_star(image, (x+1,y), pixel_list)
-    if y+1<height and image.getpixel((x,y+1)) == 255:
+    if y+1<height and image.getpixel((x,y+1)) == 1:
         pix_list_of_star(image, (x,y+1), pixel_list)
-    if 0<=x-1 and image.getpixel((x-1,y)) == 255:
+    if 0<=x-1 and image.getpixel((x-1,y)) == 1:
         pix_list_of_star(image, (x-1,y), pixel_list)
-    if 0<=y-1 and image.getpixel((x,y-1)) == 255:
+    if 0<=y-1 and image.getpixel((x,y-1)) == 1:
         pix_list_of_star(image, (x,y-1), pixel_list)
     return pixel_list
 
@@ -402,26 +406,30 @@ def new_star(image, pos, star_list):
     star_list.append(Etoile_image(average_pix(pix_list_of_star(image, pos, [])))) #ajoute à star_list le centre de la liste des pixels d'une étoile détectée en pos
 
 
-image_temp = image.copy() #utile car la fonction "new_star" a besoin de modifier l'image
+image_temp = IMAGE_NB.copy() #utile car la fonction "new_star" a besoin de modifier l'image
 LISTE_ETOILES_IMAGE = []
-for x in range(image.width): #remplit la liste des coordonnéees des étoiles sur l'image
-    for y in range(image.height):
-        if image.getpixel((x,y)) == 255:
-            new_star(image, (x,y), LISTE_ETOILES_IMAGE)
+for x in range(WIDTH): #remplit la liste des coordonnéees des étoiles sur l'image
+    for y in range(HEIGHT):
+        if image_temp.getpixel((x,y)) == 1:
+            new_star(image_temp, (x,y), LISTE_ETOILES_IMAGE)
 
-draw = ImageDraw.Draw(image_original)
-draw.font = ARIAL
+#AFFICHAGE TEMPORAIRE
+
+new_layer = Image.new("RGBA", SIZE, (255, 255, 255, 0)) #crée une image transparente pour afficher le texte sur fond transparent avant de le combiner à image_original
+drawing_instance = ImageDraw.Draw(new_layer)
+image_copy = IMAGE_ORIGINAL.copy().convert('RGBA')
 
 for etoile in LISTE_ETOILES_IMAGE: #affichage
-    draw.ellipse([(round(etoile.x)-1, round(etoile.y)-1), (round(etoile.x)+1, round(etoile.y)+1)], (0,0,255))
-draw.show("MARCHE PAS, UTILISER ALPHA_COMPOSITE")
+    drawing_instance.rectangle((round(etoile.x)-1, round(etoile.y)-1, round(etoile.x)+1, round(etoile.y)+1), (0,0,255,255), (0,0,255,255), width=1)
+
+Image.alpha_composite(image_copy, new_layer).show("Centroïdes des étoiles repérées")
+
 
 '''
 IDENTIFICATION
 '''
 
-def choose_random(liste_etoiles, lambd):
-    #choisit "lambd" etoiles au hasard sur l'image
+def choose_random(liste_etoiles, lambd): #choisit "lambd" etoiles au hasard sur l'image
     n = len(liste_etoiles)
     if(n<4):
         print("PAS ASSEZ D'ETOILES")
@@ -434,14 +442,17 @@ def choose_random(liste_etoiles, lambd):
             L.append(liste_etoiles.pop(random.randint(0,i-1))) #detruit liste_etoiles ??? a refaire
         return L
 
-def affiche_noms(liste_etoiles_image):
-    #affiche le nom de l'etoile identifiee pour chaque etoile de l'image
+def affiche_noms(liste_etoiles_image): #affiche le nom de l'etoile identifiee pour chaque etoile de l'image
+    text_layer = Image.new("RGBA", SIZE, (255, 255, 255, 0)) #cree une image transparente pour afficher le texte sur fond transparent avant de le combiner à image_original
+    drawing_instance = ImageDraw.Draw(text_layer)
+    image_copy = IMAGE_ORIGINAL.copy().convert('RGBA')
+    
     for etoile in liste_etoiles_image:
-        etoile.affiche(WINDOW)
-    pygame.display.update()
+        etoile.draw_name(drawing_instance)
+    
+    return Image.alpha_composite(image_copy, text_layer)
 
-def closest_dtf(dtf, data_base):
-    #renvoie l'objet Star de data_base avec la feature la plus proche de dtf
+def closest_dtf(dtf, data_base): #renvoie l'objet Star de data_base avec la feature la plus proche de dtf
     best = data_base[0]
     mindiff = dtf_diff(best.double_triangle_feature, dtf)
     for star in data_base:
@@ -450,22 +461,14 @@ def closest_dtf(dtf, data_base):
             best, mindiff = star, diff
     return best
 
-def get_by_attribute(data_base, attribute, val): #à coder plus proprement aled
-    """
+def get_by_attribute(data_base, attribute, val): #sûrement possible de faire plus proprement mais pas grave
     if attribute == "bayer":
-        for star in data_base:
-            if star.bayer == val:
-                return star
+        return next((star for star in data_base if star.bayer == val), [None])
     elif attribute == "id":
-        for star in data_base:
-            if star.id == val:
-                return star
+        return next((star for star in data_base if star.id == val), [None])
     elif attribute == "hip":
-        for star in data_base:
-            if star.hip == val:
-                return star
-    """
-    return next((v for v in data_base if v[attribute] == val), [None])
+        return next((star for star in data_base if star.hip == val), [None])
+
 
 '''
 for star in DATA_BASE:
@@ -473,15 +476,15 @@ for star in DATA_BASE:
 '''
 
 #LISTE_ETOILES_REF = choose_random(LISTE_ETOILES_IMAGE, LAMBD)
-#LISTE_ETOILES_REF = LISTE_ETOILES_IMAGE
+LISTE_ETOILES_REF = LISTE_ETOILES_IMAGE
 
-for etoile in LISTE_ETOILES_IMAGE:
+for etoile in LISTE_ETOILES_REF:
     calcul_map_dtf_tfl_2d(etoile, LISTE_ETOILES_IMAGE)
     #drawmap(etoile.normalized_map)
 
 
 bestr_score, bestmatchlist = -1, []
-for etoile in LISTE_ETOILES_IMAGE:
+for etoile in LISTE_ETOILES_REF:
     D0 = closest_dtf(etoile.F1, DATA_BASE)
     r_score, matchlist = identify(D0, etoile)
     if r_score > bestr_score:
@@ -491,20 +494,8 @@ for (star, etoile) in bestmatchlist:
     star.imagematch = etoile
     etoile.starmatch = star
 
-affiche_noms(LISTE_ETOILES_IMAGE)
+affiche_noms(LISTE_ETOILES_IMAGE).show("Étoiles reconnues")
 
 
-'''
-Del = get_by_attribute(DATA_BASE, Star.bayer, "Del")
-drawmap(Del.gnomic_projection_map)
-drawmap(LISTE_ETOILES_IMAGE[3].normalized_map)
-
-'''
-
-
-
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+#Del = get_by_attribute(DATA_BASE, "bayer", "Del")
+#drawmap(Del.gnomic_projection_map)
