@@ -16,7 +16,10 @@ LAMBD = 50 #nombre maximum d'etoiles de "reference"
 IMAGE_PATH = "Algo_etoiles/images/UMa2.png"
 DATA_BASE_PATH = "Algo_etoiles/database/UMa_vmagmax6.csv"
 TEMP_IMAGE_PATH = "temp.png"
-ID_THRESHOLD = 0.05
+CENTROID_SAVE_PATH = "resultats/centroids.png"
+RESULTS_SAVE_PATH = "resultats/results3.png"
+ID_THRESHOLD = 0.1
+
 
 """
 IMPORTATION ET TRAITEMENT D'IMAGE
@@ -422,7 +425,9 @@ image_copy = IMAGE_ORIGINAL.copy().convert('RGBA')
 for etoile in LISTE_ETOILES_IMAGE: #affichage
     drawing_instance.rectangle((round(etoile.x)-1, round(etoile.y)-1, round(etoile.x)+1, round(etoile.y)+1), (0,0,255,255), (0,0,255,255), width=1)
 
-Image.alpha_composite(image_copy, new_layer).show("Centroïdes des étoiles repérées")
+centroids = Image.alpha_composite(image_copy, new_layer)
+centroids.show("Centroïdes des étoiles repérées")
+centroids.save(CENTROID_SAVE_PATH)
 
 
 '''
@@ -494,8 +499,9 @@ for (star, etoile) in bestmatchlist:
     star.imagematch = etoile
     etoile.starmatch = star
 
-affiche_noms(LISTE_ETOILES_IMAGE).show("Étoiles reconnues")
-
+results = affiche_noms(LISTE_ETOILES_IMAGE)
+results.show("Étoiles reconnues")
+results.save(RESULTS_SAVE_PATH)
 
 #Del = get_by_attribute(DATA_BASE, "bayer", "Del")
 #drawmap(Del.gnomic_projection_map)
