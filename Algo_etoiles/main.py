@@ -19,6 +19,7 @@ TEMP_IMAGE_PATH = "temp.png"
 CENTROID_SAVE_PATH = "resultats/centroids.png"
 RESULTS_SAVE_PATH = "resultats/results3.png"
 ID_THRESHOLD = 0.1
+DISPLAY_MODE = "mixt" #bayerflam / hip / mixt
 
 
 """
@@ -54,6 +55,7 @@ class Star: #Type enregistrement pour les étoiles de la base de données
         self.dec = dec*pi/180   #Déclinaison avec conversion degrés->radians
         self.mag = mag          #Magnitude (correspond en gros à du -log(luminosité))
         self.wiki = wikipedia   #Lien vers la page wikipedia (si elle existe)
+        #Ajouter lien vers simbad
 
         cdec, sdec, cra, sra = cos(self.dec), sin(self.dec), cos(self.ra), sin(self.ra)
         self.xyz = (self.x, self.y, self.z) = (cdec*cra, cdec*sra, sdec) #Position sur la sphere celeste unité
@@ -64,10 +66,19 @@ class Star: #Type enregistrement pour les étoiles de la base de données
         self.gnomic_projection_map = None       #Etoiles proches et leurs coordonnees dans la base adaptée à cet étoile
 
         self.display_name = None    #Nom à afficher si trouvée (bayer, flamsteed ou id)
-        if self.bayer != None:
+        if DISPLAY_MODE == "bayerflam" and self.bayer != None:
             self.display_name = self.bayer + " " + self.con
-        elif self.flam != None: 
+        elif DISPLAY_MODE == "bayerflam" and self.flam != None:
             self.display_name = self.flam + " " + self.con
+        elif DISPLAY_MODE == "hip" and self.hip != None:
+            self.display_name = "HIP"+str(self.hip)
+        elif DISPLAY_MODE == "mixt":
+            if self.bayer != None:
+                self.display_name = self.bayer + " " + self.con
+            elif self.flam != None: 
+                self.display_name = self.flam + " " + self.con
+            elif self.hip != None:
+                self.display_name = "HIP"+str(self.hip)
         else:
             self.display_name = str(self.id)
 
