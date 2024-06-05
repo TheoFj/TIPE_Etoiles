@@ -1,0 +1,38 @@
+id,hip,bayer,flam,con,proper,ra,dec,mag,full_letter,const_genitive,wikipedia
+1304800,62956,Eps,77,UMa,Alioth,12.90045361,55.95984301,1.76,Epsilon,Ursae_Majoris,https://en.wikipedia.org/wiki/Epsilon_Ursae_Majoris
+1154608,54061,Alp,50,UMa,Dubhe,11.06217691,61.75111888,1.81,Alpha,Ursae_Majoris,https://en.wikipedia.org/wiki/Alpha_Ursae_Majoris
+1377079,67301,Eta,85,UMa,Alkaid,13.79237392,49.31330288,1.85,Eta,Ursae_Majoris,https://en.wikipedia.org/wiki/Eta_Ursae_Majoris
+1343569,65378,Zet,79,UMa,Mizar,13.39872774,54.92541525,2.23,Zeta,Ursae_Majoris,https://en.wikipedia.org/wiki/Zeta_Ursae_Majoris
+1151532,53910,Bet,48,UMa,Merak,11.0306641,56.38234478,2.34,Beta,Ursae_Majoris,https://en.wikipedia.org/wiki/Beta_Ursae_Majoris
+1224714,58001,Gam,64,UMa,Phecda,11.89717879,53.6947574,2.41,Gamma,Ursae_Majoris,https://en.wikipedia.org/wiki/Gamma_Ursae_Majoris
+1163461,54539,Psi,52,UMa,,11.16105775,44.49848342,3,Psi,Ursae_Majoris,https://en.wikipedia.org/wiki/Psi_Ursae_Majoris
+1087501,50801,Mu,34,UMa,Tania Australis,10.37215027,41.4995165,3.06,Mu,Ursae_Majoris,https://en.wikipedia.org/wiki/Mu_Ursae_Majoris
+941942,44127,Iot,9,UMa,Talitha,8.986828,48.041826,3.12,Iota,Ursae_Majoris,https://en.wikipedia.org/wiki/Iota_Ursae_Majoris
+1001802,46853,The,25,UMa,,9.547715,51.6773,3.17,Theta,Ursae_Majoris,https://en.wikipedia.org/wiki/Theta_Ursae_Majoris
+1254749,59774,Del,69,UMa,Megrez,12.257086,57.032617,3.32,Delta,Ursae_Majoris,https://en.wikipedia.org/wiki/Delta_Ursae_Majoris
+882500,41704,Omi,1,UMa,Muscida,8.504431,60.718169,3.35,Omicron,Ursae_Majoris,https://en.wikipedia.org/wiki/Omicron_Ursae_Majoris
+1078526,50372,Lam,33,UMa,Tania Borealis,10.284952,42.914365,3.45,Lambda,Ursae_Majoris,https://en.wikipedia.org/wiki/Lambda_Ursae_Majoris
+1176044,55219,Nu,54,UMa,Alula Borealis,11.30798248,33.09430465,3.49,Nu,Ursae_Majoris,https://en.wikipedia.org/wiki/Nu_Ursae_Majoris
+949805,44471,Kap,12,UMa,Alkaphrah,9.060427,47.156525,3.57,Kappa,Ursae_Majoris,https://en.wikipedia.org/wiki/Kappa_Ursae_Majoris
+999529,46733,,23,UMa,,9.525453,63.061861,3.65,,Ursae_Majoris,
+1213827,57399,Chi,63,UMa,Taiyangshou,11.76750377,47.77940553,3.69,Chi,Ursae_Majoris,https://en.wikipedia.org/wiki/Chi_Ursae_Majoris
+1033336,48319,Ups,29,UMa,,9.849867,59.038735,3.78,Upsilon,Ursae_Majoris,https://en.wikipedia.org/wiki/Upsilon_Ursae_Majoris
+1345331,65477,,80,UMa,Alcor,13.42042677,54.98795585,3.99,,Ursae_Majoris,
+1175645,,Xi,53,UMa,Alula Australis,11.30303213,31.52919433,4.33,Xi,Ursae_Majoris,https://en.wikipedia.org/wiki/Xi_Ursae_Majoris
+959191,44901,,15,UMa,,9.147863,51.604648,4.46,,Ursae_Majoris,
+1005266,47006,,26,UMa,,9.5803986,52.05147831,4.47,,Ursae_Majoris,
+1004652,46977,,24,UMa,,9.57468362,69.83034343,4.54,,Ursae_Majoris,
+1035228,48402,Phi,30,UMa,,9.86843369,54.06433787,4.55,Phi,Ursae_Majoris,https://en.wikipedia.org/wiki/Phi_Ursae_Majoris
+904292,42527,Pi-2,4,UMa,,8.67022864,64.32793567,4.59,,Ursae_Majoris,
+1367403,66738,,83,UMa,,13.67896466,54.68163243,4.63,,Ursae_Majoris,
+1139281,53295,Ome,45,UMa,,10.89965019,43.18995877,4.66,Omega,Ursae_Majoris,https://en.wikipedia.org/wiki/Omega_Ursae_Majoris
+962956,45075,Tau,14,UMa,,9.18196046,63.51363249,4.67,Tau,Ursae_Majoris,https://en.wikipedia.org/wiki/Tau_Ursae_Majoris
+1105870,51658,,,UMa,,10.55385806,40.42555611,4.72,,Ursae_Majoris,
+947855,44390,Rho,8,UMa,,9.04241466,67.62961701,4.74,Rho,Ursae_Majoris,https://en.wikipedia.org/wiki/Rho_Ursae_Majoris
+1176942,55266,,55,UMa,,11.318864,38.185557,4.76,,Ursae_Majoris,
+961971,45038,Sig-2,13,UMa,,9.17320497,67.13400723,4.8,Sigma,Ursae_Majoris,https://en.wikipedia.org/wiki/Sigma_Ursae_Majoris
+972303,45493,,18,UMa,,9.26981358,54.02185653,4.8,,Ursae_Majoris,
+1101652,51459,,36,UMa,,10.51043859,55.98053929,4.82,,Ursae_Majoris,
+1313286,63503,,78,UMa,,13.012125,56.366338,4.93,,Ursae_Majoris,
+1090591,50933,,,UMa,,10.40217942,65.56642121,4.94,,Ursae_Majoris,
+1181969,55560,,56,UMa,,11.38044019,43.48270463,4.99,,Ursae_Majoris,

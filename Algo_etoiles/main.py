@@ -9,12 +9,13 @@ import random
 """
 CONSTANTES
 """
-FOV = 90
-L = FOV*pi/180 #fov en radians 
-L2 = (L**2)/2 #rayon du disque des etoiles prises en compte dans "calcul_gnomic_dtf_tfl" (cf. 4.1 https://www.mdpi.com/1424-8220/20/11/3027)
+
+#FOV = 90
+#L = FOV*pi/180 #fov en radians 
+#L2 = (L**2)/2 #rayon du disque des etoiles prises en compte dans "calcul_gnomic_dtf_tfl" (cf. 4.1 https://www.mdpi.com/1424-8220/20/11/3027)
 LAMBD = 50 #nombre maximum d'etoiles de "reference"
 IMAGE_PATH = "Algo_etoiles/images/UMa4.png"
-DATA_BASE_PATH = "Algo_etoiles/database/athyg_modified_vmagmax6.csv"
+DATA_BASE_PATH = "Algo_etoiles/databasecsv/treated_athyg_modified_vmagmax6.csv"
 TEMP_IMAGE_PATH = "temp.png"
 CENTROID_SAVE_PATH = "resultats/centroids.png"
 RESULTS_SAVE_PATH = "resultats/results3.png"
@@ -44,7 +45,7 @@ TYPES
 """
 class Star: #Type enregistrement pour les étoiles de la base de données
 
-    def __init__(self, id, hip, bayer, flam, con, proper, ra, dec, mag, wikipedia): #ra et dec en heures et degres dans le csv
+    def __init__(self, id, hip, bayer, flam, con, proper, ra, dec, mag, wikipedia, x, y, z, tfl, dtf): #ra et dec en heures et degres dans le csv
         self.id = id            #Identifiant dans la base de donnéee
         self.hip = hip          #Identifiant hipparcos (si il existe)
         self.bayer = bayer      #Désignation de bayer  (si elle existe)
@@ -55,15 +56,16 @@ class Star: #Type enregistrement pour les étoiles de la base de données
         self.dec = dec*pi/180   #Déclinaison avec conversion degrés->radians
         self.mag = mag          #Magnitude (correspond en gros à du -log(luminosité))
         self.wiki = wikipedia   #Lien vers la page wikipedia (si elle existe)
+        self.xyz = (self.x, self.y, self.z) = x, y, z #(cosdec*cosra, cosdec*sinra, sindec) #Position sur la sphere celeste unité
+        self.total_feature_length = tfl        #Longueur totale des segments de double_triangle_feature
+        self.double_triangle_feature = dtf     #Longueurs et angles des deux triangles formé par les 4 etoiles les plus proches
         #Ajouter lien vers simbad
 
-        cdec, sdec, cra, sra = cos(self.dec), sin(self.dec), cos(self.ra), sin(self.ra)
-        self.xyz = (self.x, self.y, self.z) = (cdec*cra, cdec*sra, sdec) #Position sur la sphere celeste unité
+        #cdec, sdec, cra, sra = cos(self.dec), sin(self.dec), cos(self.ra), sin(self.ra)
 
         self.imagematch = None                  #Objet Etoile_Image correspondant si trouvé
-        self.double_triangle_feature = None     #Longueurs et angles des deux triangles formé par les 4 etoiles les plus proches
-        self.total_feature_length = None        #Longueur totale des segments de double_triangle_feature
-        self.gnomic_projection_map = None       #Etoiles proches et leurs coordonnees dans la base adaptée à cet étoile
+        self.gnomic_projection_map = None      #Etoiles proches et leurs coordonnees dans la base adaptée à cet étoile
+
 
         self.display_name = None    #Nom à afficher si trouvée (bayer, flamsteed ou id)
         if DISPLAY_MODE == "bayerflam" and self.bayer != None:
@@ -81,6 +83,16 @@ class Star: #Type enregistrement pour les étoiles de la base de données
                 self.display_name = "HIP"+str(self.hip)
         else:
             self.display_name = str(self.id)
+
+    def load_gnomic(self):
+        path = "Algo_etoiles/treated_data/"+str(self.id)+".csv"
+        self.gnomic_projection_map = []
+        with open(path, newline='') as file:
+            reader = csv.reader(file, delimiter=',')
+            for row in reader:
+                starid, x, y = int(row[0]), float(row[1]), float(row[2])
+                self.gnomic_projection_map.append((starid,(x,y)))
+
 
     def draw_name(self, drawing_instance):
         if self.imagematch.xy != None:
@@ -223,7 +235,7 @@ def calcul_double_triangle_feature(M0, M1, M2, M3): #appelé sur M0,M2,M3,M4 pou
     n03 = norm2(v03)
     n21 = norm2(v21)
     n32 = norm2(v32)
-    return (angle_2d(v21, v20, n21*n02),
+    return [angle_2d(v21, v20, n21*n02),
             angle_2d(v10, v12, n21*n01), 
             angle_2d(v01, v02, n01*n02), 
             angle_2d(v30, v32, n03*n32), 
@@ -235,51 +247,10 @@ def calcul_double_triangle_feature(M0, M1, M2, M3): #appelé sur M0,M2,M3,M4 pou
             n02,
             n03, 
             n32, 
-            )
+            ]
 
 def calcul_total_feature_length(dtf):
     return sum([dtf[i] for i in range(6,12)])
-
-def calcul_gnomic_dtf_tfl(D0, star_list):
-    '''
-    Calculs à faire sur chaque étoile de la base donnée, 
-    à faire idéalement dans un code séparé pour ne pas le recalculer à chaque fois
-    car ces calculs sont indépendants de l'imaage.
-    '''
-    
-    #PROJECTION SUR LE PLAN TANGEANT AU CERCLE UNITE
-    #permet de simuler une photo prise par un capteur plan
-    # (cf. https://www.mdpi.com/1424-8220/20/11/3027 section 4.1)
-    # (cf. __ a completer __)
-    C = []
-    for star in star_list:
-        p = dot_prod3(D0.xyz, star.xyz)
-        proj_vect = (star.x/p - D0.x), (star.y/p - D0.y), (star.z/p - D0.z)
-        if p>0 and norm3_sqr(proj_vect) < L2:
-            C.append((star, proj_vect))
-
-    #CHANGEMENT DE BASE EN PRENANT LETOILE LA PLUS PROCHE
-    # (cf. https://www.mdpi.com/1424-8220/20/11/3027 section 4.2)
-    # permet d'aligner les systemes de coordonnees basee de donnee/image afin d'avoir des donnees comparables
-    best_3 = closest_nstars(C, 3, False, 3)
-    E1 = best_3[0][1]
-    E2 = cross_prod3(D0.xyz, E1) #rotation de pi/2 de E1
-    k = norm3_sqr(best_3[0][1])
-
-    L = [(starandvect[0], (dot_prod3(starandvect[1], E1)/k, dot_prod3(starandvect[1], E2)/k)) for starandvect in C]
-
-    C0 = (D0, (0., 0.))
-    C1 = (best_3[0][0], (1., 0.))
-    C2 = (best_3[1][0], (dot_prod3(best_3[1][1], E1)/k, dot_prod3(best_3[1][1], E2)/k))
-    C3 = (best_3[2][0], (dot_prod3(best_3[2][1], E1)/k, dot_prod3(best_3[2][1], E2)/k))
-
-    DTF = calcul_double_triangle_feature(C0[1], C1[1], C2[1], C3[1])
-    
-    #Enregistrement dans l'objet Star D0
-    D0.gnomic_projection_map = L
-    D0.double_triangle_feature = DTF
-    D0.total_feature_length = calcul_total_feature_length(DTF)
-    return
 
 def changement_base_2d(M0, M1, image_star_list):
     #Normalisation de la liste des coordonnees des etoiles en fonction de deux points/etoiles de l'image
@@ -345,14 +316,14 @@ def identify(D0, M0):
         on compare leurs projections normalisees afin d'établir des correspondances,
         le résuultat final est l'identification avec le meilleur "r_score": le nombre d'étoiles identifiées.
     '''
-
+    D0.load_gnomic() #besoin d'importer ces valeurs seulement pour les etoiles choisies par la "premiere selction"
     r_score = 0
     matchlist = []
     for (etoile_image, (x2,y2)) in M0.normalized_map:
-        for (catalog_star, (x1,y1)) in D0.gnomic_projection_map:
+        for (catalog_star_id, (x1,y1)) in D0.gnomic_projection_map:
             if abs(x1-x2)<=ID_THRESHOLD and abs(y1-y2)<=ID_THRESHOLD:
                 r_score += 1
-                matchlist.append((catalog_star, etoile_image))
+                matchlist.append((catalog_star_id, etoile_image))
                 break #a ameliorer
 
     return r_score, matchlist
@@ -365,21 +336,26 @@ csv_file = open(DATA_BASE_PATH)
 next(csv_file) #skip la premiere ligne
 reader = csv.reader(csv_file, delimiter=',')
 
-DATA_BASE = [Star(intbis(row[0]),       #construction de DATA_BASE: liste d'objets de type Star
-                    intbis(row[1]),
-                    strbis(row[2]),
-                    strbis(row[3]),
-                    strbis(row[4]),
-                    strbis(row[5]),
-                    fltbis(row[6]),
-                    fltbis(row[7]),
-                    fltbis(row[8]),
-                    strbis(row[11])) for row in reader]
+reader = csv.reader(csv_file, delimiter=',')
+DATA_BASE = [Star(                      #construction de DATA_BASE: liste d'objets de type Star, conversions un peu inutiles mais copiees
+                int(row[0]),            #id
+                intbis(row[1]),         #hip
+                strbis(row[2]),         #bayer
+                strbis(row[3]),         #flam
+                str(row[4]),            #const
+                strbis(row[5]),         #proper
+                float(row[6]),          #ra
+                float(row[7]),          #dec
+                float(row[8]),          #mag
+                strbis(row[11]),        #wiki
+                str(row[12]),           #x
+                str(row[13]),           #y
+                str(row[14]),           #z
+                str(row[15]),           #tfl
+                [float(row[i]) for i in range(16,28)],     #dtf
+                ) for row in reader]
+
 csv_file.close()
-
-for star in DATA_BASE:
-    calcul_gnomic_dtf_tfl(star,  DATA_BASE)
-
 
 """
 TRAITEMENT IMAGE
@@ -506,7 +482,8 @@ for etoile in LISTE_ETOILES_REF:
     if r_score > bestr_score:
         bestr_score, bestmatchlist = r_score, matchlist
 
-for (star, etoile) in bestmatchlist:
+for (starid, etoile) in bestmatchlist:
+    star = get_by_attribute(DATA_BASE, "id", starid)
     star.imagematch = etoile
     etoile.starmatch = star
 
