@@ -15,7 +15,6 @@ L2 = (L**2)/2 #rayon du disque des etoiles prises en compte dans "calcul_gnomic_
 DATA_BASE_NAME = "athyg_modified_vmagmax6.csv"
 DATA_BASE_PATH = "Algo_etoiles/databasecsv/"+DATA_BASE_NAME
 DATA_BASE_TREATED_PATH = "Algo_etoiles/databasecsv/treated_"+DATA_BASE_NAME
-TEMP_IMAGE_PATH = "temp.png"
 DISPLAY_MODE = "mixt" #bayerflam / hip / mixt
 
 """

@@ -14,11 +14,10 @@ CONSTANTES
 #L = FOV*pi/180 #fov en radians 
 #L2 = (L**2)/2 #rayon du disque des etoiles prises en compte dans "calcul_gnomic_dtf_tfl" (cf. 4.1 https://www.mdpi.com/1424-8220/20/11/3027)
 LAMBD = 50 #nombre maximum d'etoiles de "reference"
-IMAGE_PATH = "Algo_etoiles/images/UMa4.png"
+IMAGE_PATH = "Algo_etoiles/images/chameleon.png"
 DATA_BASE_PATH = "Algo_etoiles/databasecsv/treated_athyg_modified_vmagmax6.csv"
-TEMP_IMAGE_PATH = "temp.png"
 CENTROID_SAVE_PATH = "resultats/centroids.png"
-RESULTS_SAVE_PATH = "resultats/results3.png"
+RESULTS_SAVE_PATH = "resultats/results6.png"
 ID_THRESHOLD = 0.1
 DISPLAY_MODE = "mixt" #bayerflam / hip / mixt
 
@@ -28,7 +27,7 @@ IMPORTATION ET TRAITEMENT D'IMAGE
 """
 
 DISPLAY_CIRCLE_RADIUS = 6 #rayon des cercles lors de l'affichage des etoiles trouvees
-FONT = ImageFont.truetype(font = "arial.ttf", size = 12)
+FONT = ImageFont.truetype(font = "arial.ttf", size=8)
 
 BLACK_WHITE_THRESHOLD = 190
 def pixel_to_NB(pixel): #permet de choisir le contraste de la conversion en noir et blanc
