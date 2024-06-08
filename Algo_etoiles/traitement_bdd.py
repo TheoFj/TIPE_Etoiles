@@ -22,7 +22,7 @@ TYPES
 """
 class Star: #Type enregistrement pour les étoiles de la base de données
 
-    def __init__(self, id, hip, bayer, flam, con, proper, ra, dec, mag, full, gen, wikipedia): #ra et dec en heures et degres dans le csv
+    def __init__(self, id, hip, bayer, flam, con, proper, ra, dec, mag, full, gen, unicode): #ra et dec en heures et degres dans le csv
         self.id = id            #Identifiant dans la base de donnéee
         self.hip = hip          #Identifiant hipparcos (si il existe)
         self.bayer = bayer      #Désignation de bayer  (si elle existe)
@@ -32,10 +32,16 @@ class Star: #Type enregistrement pour les étoiles de la base de données
         self.ra = ra*pi/12      #Ascention droite avec conversion heures(15deg)->radians
         self.dec = dec*pi/180   #Déclinaison avec conversion degrés->radians
         self.mag = mag          #Magnitude (correspond en gros à du -log(luminosité))
-        self.full_letter = full
-        self.genitive = gen
-        self.wiki = wikipedia   #Lien vers la page wikipedia (si elle existe)
-        #Ajouter lien vers simbad
+        self.full_letter = full #Désignation de bayer en toutes lettres
+        self.genitive = gen     #Génitif latin de la constellation en toutes lettres
+        self.uni = unicode      #Caractère unicode grec de la désignation de bayer
+
+        self.simbad = ""
+        self.wiki = ""
+        if self.hip != None: 
+            self.simbad = "http://cdsportal.u-strasbg.fr/?target=hip"+self.hip #sinon utiliser les coordonnees mais flm là
+        if self.full_letter != None: #ameliorer pour adapter aux Sig-1, Sig-2 etc.
+            self.wiki = "https://en.wikipedia.org/wiki/"+self.full_letter+"_"+self.genitive
 
 
         cdec, sdec, cra, sra = cos(self.dec), sin(self.dec), cos(self.ra), sin(self.ra)
@@ -228,7 +234,7 @@ next(csv_file)
 reader = csv.reader(csv_file, delimiter=',')
 DATA_BASE = [Star(                      #construction de DATA_BASE: liste d'objets de type Star, conversions un peu inutiles mais copiees
                 int(row[0]),            #id
-                intbis(row[1]),         #hip
+                strbis(row[1]),         #hip (ici en string mais en int dans main)
                 strbis(row[2]),         #bayer
                 strbis(row[3]),         #flam
                 str(row[4]),            #const
@@ -238,7 +244,7 @@ DATA_BASE = [Star(                      #construction de DATA_BASE: liste d'obje
                 float(row[8]),          #mag
                 strbis(row[9]),         #full
                 strbis(row[10]),        #gen
-                strbis(row[11]),        #wiki
+                strbis(row[11]),        #greek_unicode
                 ) for row in reader]
 
 csv_file.close()
@@ -249,13 +255,13 @@ reader2 = csv.reader(csv_file2, delimiter=',')
 writer = csv.writer(csv_save, delimiter=',')
 
 row1 = next(reader2)
-writer.writerow(row1+["x","y","z","tfl","th01","th021","th12","th023","th03","th23","l01","l02","l12","l02","l03","l23"])
+writer.writerow(row1+["x","y","z","tfl","th01","th021","th12","th023","th03","th23","l01","l02","l12","l02","l03","l23","wikipedia","simbad"])
 
 for star in DATA_BASE:
     row = next(reader2)
     assert(star.id == int(row[0]))
     calcul_gnomic_dtf_tfl(star,  DATA_BASE)
-    writer.writerow(row+[star.x,star.y,star.z,star.total_feature_length]+star.double_triangle_feature)
+    writer.writerow(row+[star.x,star.y,star.z,star.total_feature_length]+star.double_triangle_feature+[star.wiki, star.simbad])
     star.save_gnomic()
 
 

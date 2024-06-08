@@ -5,6 +5,7 @@ import random
 #import matplotlib.pyplot as plt
 
 #LIRE https://www.mdpi.com/1424-8220/20/11/3027
+#UTILISER https://pyfpdf.readthedocs.io/en/latest/index.html pour renvoyer un fichier pdf avec les hyperliens wikipedia/simbad
 
 """
 CONSTANTES
@@ -27,7 +28,7 @@ IMPORTATION ET TRAITEMENT D'IMAGE
 """
 
 DISPLAY_CIRCLE_RADIUS = 6 #rayon des cercles lors de l'affichage des etoiles trouvees
-FONT = ImageFont.truetype(font = "arial.ttf", size=8)
+FONT = ImageFont.truetype(font = "arial.ttf", size=10)
 
 BLACK_WHITE_THRESHOLD = 190
 def pixel_to_NB(pixel): #permet de choisir le contraste de la conversion en noir et blanc
@@ -44,7 +45,7 @@ TYPES
 """
 class Star: #Type enregistrement pour les étoiles de la base de données
 
-    def __init__(self, id, hip, bayer, flam, con, proper, ra, dec, mag, wikipedia, x, y, z, tfl, dtf): #ra et dec en heures et degres dans le csv
+    def __init__(self, id, hip, bayer, flam, con, proper, ra, dec, mag, unicode, x, y, z, tfl, dtf, wikipedia, simbad): #ra et dec en heures et degres dans le csv
         self.id = id            #Identifiant dans la base de donnéee
         self.hip = hip          #Identifiant hipparcos (si il existe)
         self.bayer = bayer      #Désignation de bayer  (si elle existe)
@@ -54,17 +55,17 @@ class Star: #Type enregistrement pour les étoiles de la base de données
         self.ra = ra*pi/12      #Ascention droite avec conversion heures(15deg)->radians
         self.dec = dec*pi/180   #Déclinaison avec conversion degrés->radians
         self.mag = mag          #Magnitude (correspond en gros à du -log(luminosité))
-        self.wiki = wikipedia   #Lien vers la page wikipedia (si elle existe)
         self.xyz = (self.x, self.y, self.z) = x, y, z #(cosdec*cosra, cosdec*sinra, sindec) #Position sur la sphere celeste unité
         self.total_feature_length = tfl        #Longueur totale des segments de double_triangle_feature
         self.double_triangle_feature = dtf     #Longueurs et angles des deux triangles formé par les 4 etoiles les plus proches
-        #Ajouter lien vers simbad
+        self.uni = unicode      #Caractère unicode grec de la désignation de bayer
+        self.wiki = wikipedia   #Lien vers la page wikipedia (si elle existe)
+        self.simbad = simbad    #Lien vers la page simbad
 
         #cdec, sdec, cra, sra = cos(self.dec), sin(self.dec), cos(self.ra), sin(self.ra)
 
         self.imagematch = None                  #Objet Etoile_Image correspondant si trouvé
         self.gnomic_projection_map = None      #Etoiles proches et leurs coordonnees dans la base adaptée à cet étoile
-
 
         self.display_name = None    #Nom à afficher si trouvée (bayer, flamsteed ou id)
         if DISPLAY_MODE == "bayerflam" and self.bayer != None:
@@ -346,12 +347,14 @@ DATA_BASE = [Star(                      #construction de DATA_BASE: liste d'obje
                 float(row[6]),          #ra
                 float(row[7]),          #dec
                 float(row[8]),          #mag
-                strbis(row[11]),        #wiki
+                strbis(row[11]),        #greek unicode
                 str(row[12]),           #x
                 str(row[13]),           #y
                 str(row[14]),           #z
                 str(row[15]),           #tfl
                 [float(row[i]) for i in range(16,28)],     #dtf
+                strbis(row[28]),        #wiki
+                strbis(row[29]),        #simbad
                 ) for row in reader]
 
 csv_file.close()
