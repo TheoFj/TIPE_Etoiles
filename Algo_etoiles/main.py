@@ -2,6 +2,8 @@ from math import *
 from PIL import Image, ImageDraw, ImageFont
 import csv
 import random
+from fpdf import FPDF
+
 #import matplotlib.pyplot as plt
 
 #LIRE https://www.mdpi.com/1424-8220/20/11/3027
@@ -11,14 +13,13 @@ import random
 CONSTANTES
 """
 
-#FOV = 90
-#L = FOV*pi/180 #fov en radians 
-#L2 = (L**2)/2 #rayon du disque des etoiles prises en compte dans "calcul_gnomic_dtf_tfl" (cf. 4.1 https://www.mdpi.com/1424-8220/20/11/3027)
-LAMBD = 50 #nombre maximum d'etoiles de "reference"
-IMAGE_PATH = "Algo_etoiles/images/chameleon.png"
+#LAMBD = 50 #nombre maximum d'etoiles de "reference"
+IMAGE_PATH = "Algo_etoiles/images/grandeourse2.png"
 DATA_BASE_PATH = "Algo_etoiles/databasecsv/treated_athyg_modified_vmagmax6.csv"
 CENTROID_SAVE_PATH = "resultats/centroids.png"
 RESULTS_SAVE_PATH = "resultats/results6.png"
+RESULTSPDF_SAVE_PATH = "resultatspdf/results1.pdf"
+FONT_PATH = "Algo_etoiles/arial.ttf"
 ID_THRESHOLD = 0.1
 DISPLAY_MODE = "mixt" #bayerflam / hip / mixt
 
@@ -26,15 +27,15 @@ DISPLAY_MODE = "mixt" #bayerflam / hip / mixt
 """
 IMPORTATION ET TRAITEMENT D'IMAGE
 """
+FONT_SIZE = 8
+DISPLAY_CIRCLE_RADIUS = 4 #rayon des cercles lors de l'affichage des etoiles trouvees
+FONT = ImageFont.truetype(font = FONT_PATH, size = FONT_SIZE)
 
-DISPLAY_CIRCLE_RADIUS = 6 #rayon des cercles lors de l'affichage des etoiles trouvees
-FONT = ImageFont.truetype(font = "arial.ttf", size=10)
-
-BLACK_WHITE_THRESHOLD = 190
+BLACK_WHITE_THRESHOLD = 170
 def pixel_to_NB(pixel): #permet de choisir le contraste de la conversion en noir et blanc
     return 1 if pixel > BLACK_WHITE_THRESHOLD else 0
 
-IMAGE_ORIGINAL = Image.open(IMAGE_PATH).convert('L')
+IMAGE_ORIGINAL = Image.open(IMAGE_PATH)
 IMAGE_GRAYSCALE = IMAGE_ORIGINAL.convert('L')
 IMAGE_NB = IMAGE_GRAYSCALE.point(pixel_to_NB, mode='1')
 
@@ -75,7 +76,9 @@ class Star: #Type enregistrement pour les étoiles de la base de données
         elif DISPLAY_MODE == "hip" and self.hip != None:
             self.display_name = "HIP"+str(self.hip)
         elif DISPLAY_MODE == "mixt":
-            if self.bayer != None:
+            if self.proper != None:
+                self.display_name = self.proper
+            elif self.bayer != None:
                 self.display_name = self.bayer + " " + self.con
             elif self.flam != None: 
                 self.display_name = self.flam + " " + self.con
@@ -94,14 +97,19 @@ class Star: #Type enregistrement pour les étoiles de la base de données
                 self.gnomic_projection_map.append((starid,(x,y)))
 
 
-    def draw_name(self, drawing_instance):
+    def draw_name_pillow(self, drawing_instance):
         if self.imagematch.xy != None:
             x, y = self.imagematch.xy
             r = DISPLAY_CIRCLE_RADIUS
-            textxy = (x, y-r-4)
+            if y-r-4-FONT_SIZE>0:
+                textxy = (x, y-r-4)
+                mode = "ms" #middle baseline
+            else:
+                textxy = (x, y+r+4)
+                mode = "mt" #middle top
             circle_x0y0x1y1 = (x-r, y-r, x+r, y+r)
 
-            drawing_instance.text(textxy, self.display_name, font = FONT, fill = (0, 255, 0, 255), anchor = "ms") #ms: middle baseline
+            drawing_instance.text(textxy, self.display_name, font = FONT, fill = (0, 255, 0, 255), anchor = mode)
             drawing_instance.ellipse(circle_x0y0x1y1, outline = (0, 255, 0, 255), width = 1)
         
 class Etoile_image: #Type enregistrement pour les étoiles de l'image
@@ -117,19 +125,42 @@ class Etoile_image: #Type enregistrement pour les étoiles de l'image
 
         self.starmatch = None           #Objet Star correspondant si trouvé
 
-    def draw_name(self, drawing_instance):
+    def draw_name_pillow(self, drawing_instance):
         x, y = self.xy
         r = DISPLAY_CIRCLE_RADIUS
-        textxy = (x, y-r-4)
+        if y-r-4-FONT_SIZE>0:
+            textxy = (x, y-r-4)
+            mode = "ms" #middle baseline
+        else:
+            textxy = (x, y+r+4)
+            mode = "mt" #middle top
         circle_x0y0x1y1 = (x-r, y-r, x+r, y+r)
 
         if self.starmatch != None:
             #print(self.xy, self.starmatch)
-            drawing_instance.text(textxy, self.starmatch.display_name, font = FONT, fill = (0, 255, 0, 255), anchor = "ms") #ms: middle baseline
+            drawing_instance.text(textxy, self.starmatch.display_name, font = FONT, fill = (0, 255, 0, 255), anchor = mode)
             drawing_instance.ellipse(circle_x0y0x1y1, outline = (0, 255, 0, 255), width = 1)
         else:
             #print(self.xy, None)
             drawing_instance.ellipse(circle_x0y0x1y1, outline = (255, 0, 0, 255), width = 1)
+            
+    def draw_name_pdf(self, pdf):
+        x, y = self.xy
+        r = DISPLAY_CIRCLE_RADIUS
+        textx, texty = x-2.5*FONT_SIZE, y-r-4-FONT_SIZE
+        if texty<0:
+            texty = y+r+4
+        circlex, circley = x-r, y-r
+
+        if self.starmatch != None:
+            #print(self.xy, self.starmatch)
+            pdf.set_xy(textx, texty)
+            pdf.set_text_color(0, 255, 0)
+            pdf.set_draw_color(0, 255, 0)
+            pdf.write(5, self.starmatch.display_name, self.starmatch.simbad)
+        else:
+            pdf.set_draw_color(255, 0, 0)
+        pdf.ellipse(circlex, circley, 2*r, 2*r)
 
 
 
@@ -144,6 +175,8 @@ def strbis(s):
     return None if (s=='' or s=='#N/A') else str(s)
 def fltbis(s):
     return None if (s=='' or s=='#N/A') else float(s)
+def unidecode(s):
+    return None if (s=='' or s=="#N/A") else bytes(s).decode("utf-8")
 
 def ang_dist(Star1, Star2): #https://en.wikipedia.org/wiki/Angular_distance
     p = dot_prod3(Star1.xyz, Star2.xyz)
@@ -290,7 +323,7 @@ def calcul_map_dtf_tfl_2d(M0, image_star_list):
 
 def dtf_diff(dtf1, dtf2): #cf. eq(6) de https://www.mdpi.com/1424-8220/20/11/3027
     return sum([abs(dtf1[i] - dtf2[i]) for i in range(12)])
-
+'''
 def select_Ks_stars(data_base, etoile): #eq(7) MARCHE TRES TRES MAL
 
     l1 = etoile.F1_length
@@ -309,6 +342,7 @@ def select_Ks_stars(data_base, etoile): #eq(7) MARCHE TRES TRES MAL
             data_base_reduced2.append(star)
     
     return data_base_reduced1, data_base_reduced2
+'''
 
 def identify(D0, M0):
     '''
@@ -400,8 +434,8 @@ def new_star(image, pos, star_list):
 
 image_temp = IMAGE_NB.copy() #utile car la fonction "new_star" a besoin de modifier l'image
 LISTE_ETOILES_IMAGE = []
-for x in range(WIDTH): #remplit la liste des coordonnéees des étoiles sur l'image
-    for y in range(HEIGHT):
+for y in range(HEIGHT): #remplit la liste des coordonnéees des étoiles sur l'image
+    for x in range(WIDTH):
         if image_temp.getpixel((x,y)) == 1:
             new_star(image_temp, (x,y), LISTE_ETOILES_IMAGE)
 
@@ -436,15 +470,28 @@ def choose_random(liste_etoiles, lambd): #choisit "lambd" etoiles au hasard sur 
             L.append(liste_etoiles.pop(random.randint(0,i-1))) #detruit liste_etoiles ??? a refaire
         return L
 
-def affiche_noms(liste_etoiles_image): #affiche le nom de l'etoile identifiee pour chaque etoile de l'image
+def affiche_noms_pillow(liste_etoiles_image): #affiche le nom de l'etoile identifiee pour chaque etoile de l'image
     text_layer = Image.new("RGBA", SIZE, (255, 255, 255, 0)) #cree une image transparente pour afficher le texte sur fond transparent avant de le combiner à image_original
     drawing_instance = ImageDraw.Draw(text_layer)
     image_copy = IMAGE_ORIGINAL.copy().convert('RGBA')
     
     for etoile in liste_etoiles_image:
-        etoile.draw_name(drawing_instance)
+        etoile.draw_name_pillow(drawing_instance)
     
     return Image.alpha_composite(image_copy, text_layer)
+
+def affiche_noms_pdf(liste_etoiles_image): #affiche le nom de l'etoile identifiee pour chaque etoile de l'image
+    pdf = FPDF("P", "pt", (WIDTH, HEIGHT))
+    pdf.add_font("police", "", FONT_PATH, uni=True)
+    pdf.set_font("police", "", FONT_SIZE)
+    pdf.set_margins(0, 0, 0)
+    pdf.set_auto_page_break(False)
+    pdf.add_page()
+    pdf.image(IMAGE_PATH, 0, 0, WIDTH, HEIGHT)
+    for etoile in liste_etoiles_image:
+        etoile.draw_name_pdf(pdf)
+    
+    return pdf
 
 def closest_dtf(dtf, data_base): #renvoie l'objet Star de data_base avec la feature la plus proche de dtf
     best = data_base[0]
@@ -489,9 +536,14 @@ for (starid, etoile) in bestmatchlist:
     star.imagematch = etoile
     etoile.starmatch = star
 
-results = affiche_noms(LISTE_ETOILES_IMAGE)
+results = affiche_noms_pillow(LISTE_ETOILES_IMAGE)
 results.show("Étoiles reconnues")
-results.save(RESULTS_SAVE_PATH)
+#results.save(RESULTS_SAVE_PATH)
+
+
+resultspdf = affiche_noms_pdf(LISTE_ETOILES_IMAGE)
+resultspdf.output(RESULTSPDF_SAVE_PATH, 'F')
+
 
 #Del = get_by_attribute(DATA_BASE, "bayer", "Del")
 #drawmap(Del.gnomic_projection_map)
