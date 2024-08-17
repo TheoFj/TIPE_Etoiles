@@ -1,4 +1,4 @@
-Algorithme de recherche d'étoiles, entièrement développé en python. (à noter qu'il ne fonctionne pas par soucis technique, mais les problèmes seront résolus incessamment sous peu).
+Algorithme de recherche d'étoiles, entièrement développé en python.
 
 UPDATE 16/05/2024:  -Il marche un peu sur qlq constellations
 
