@@ -14,11 +14,11 @@ CONSTANTES
 """
 
 #LAMBD = 50 #nombre maximum d'etoiles de "reference"
-IMAGE_PATH = "Algo_etoiles/images/grandeourse2.png"
+IMAGE_PATH = "Algo_etoiles/images/test2.png"
 DATA_BASE_PATH = "Algo_etoiles/databasecsv/treated_athyg_modified_vmagmax6.csv"
 CENTROID_SAVE_PATH = "resultats/centroids.png"
-RESULTS_SAVE_PATH = "resultats/results6.png"
-RESULTSPDF_SAVE_PATH = "resultatspdf/results1.pdf"
+RESULTS_SAVE_PATH = "resultats/results7.png"
+RESULTSPDF_SAVE_PATH = "resultatspdf/results3.pdf"
 FONT_PATH = "Algo_etoiles/arial.ttf"
 ID_THRESHOLD = 0.1
 DISPLAY_MODE = "mixt" #bayerflam / hip / mixt
@@ -31,7 +31,7 @@ FONT_SIZE = 8
 DISPLAY_CIRCLE_RADIUS = 4 #rayon des cercles lors de l'affichage des etoiles trouvees
 FONT = ImageFont.truetype(font = FONT_PATH, size = FONT_SIZE)
 
-BLACK_WHITE_THRESHOLD = 170
+BLACK_WHITE_THRESHOLD = 100
 def pixel_to_NB(pixel): #permet de choisir le contraste de la conversion en noir et blanc
     return 1 if pixel > BLACK_WHITE_THRESHOLD else 0
 
