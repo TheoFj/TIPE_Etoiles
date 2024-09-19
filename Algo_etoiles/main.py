@@ -14,12 +14,15 @@ CONSTANTES
 """
 
 #LAMBD = 50 #nombre maximum d'etoiles de "reference"
-IMAGE_PATH = "Algo_etoiles/images/test2.png"
+IMAGE_PATH = "Algo_etoiles/images/test.png"
 DATA_BASE_PATH = "Algo_etoiles/databasecsv/treated_athyg_modified_vmagmax6.csv"
 CENTROID_SAVE_PATH = "resultats/centroids.png"
-RESULTS_SAVE_PATH = "resultats/results7.png"
-RESULTSPDF_SAVE_PATH = "resultatspdf/results3.pdf"
+RESULTS_SAVE_PATH = "resultats/results8.png"
+RESULTSPDF_SAVE_PATH = "resultatspdf/results8.pdf"
 FONT_PATH = "Algo_etoiles/arial.ttf"
+FONT_SIZE = 10
+DISPLAY_CIRCLE_RADIUS = 3 #rayon des cercles lors de l'affichage des etoiles trouvees
+FONT = ImageFont.truetype(font = FONT_PATH, size = FONT_SIZE)
 ID_THRESHOLD = 0.1
 DISPLAY_MODE = "mixt" #bayerflam / hip / mixt
 
@@ -27,19 +30,47 @@ DISPLAY_MODE = "mixt" #bayerflam / hip / mixt
 """
 IMPORTATION ET TRAITEMENT D'IMAGE
 """
-FONT_SIZE = 8
-DISPLAY_CIRCLE_RADIUS = 4 #rayon des cercles lors de l'affichage des etoiles trouvees
-FONT = ImageFont.truetype(font = FONT_PATH, size = FONT_SIZE)
-
-BLACK_WHITE_THRESHOLD = 100
-def pixel_to_NB(pixel): #permet de choisir le contraste de la conversion en noir et blanc
-    return 1 if pixel > BLACK_WHITE_THRESHOLD else 0
+convolution = True
 
 IMAGE_ORIGINAL = Image.open(IMAGE_PATH)
 IMAGE_GRAYSCALE = IMAGE_ORIGINAL.convert('L')
-IMAGE_NB = IMAGE_GRAYSCALE.point(pixel_to_NB, mode='1')
 
 SIZE = WIDTH, HEIGHT = IMAGE_ORIGINAL.size
+
+MAT = [[ 0,-1, 0],
+       [-1, 4,-1],
+       [ 0,-1, 0]]
+
+def block(var, min, max):
+    if var<min: return 0
+    elif var>=max: return max-1
+    return var
+
+def convolve(image, width, height, mat):
+    output = Image.new('L', (width, height))
+    for x in range(width):
+        for y in range(height):
+            acc=0
+            for i in range(3):
+                for j in range(3):
+                    xbis = block(x+i-1, 0, width)
+                    ybis = block(y+j-1, 0, height)
+                    acc += image.getpixel((xbis,ybis))*mat[i][j]
+            acc = block(acc, 0, 256)
+            output.putpixel((x, y), acc)
+    return output
+
+if convolution == True:
+    IMAGE_TREATED = convolve(IMAGE_GRAYSCALE, WIDTH, HEIGHT, MAT)
+else:
+    IMAGE_TREATED = IMAGE_GRAYSCALE
+
+BLACK_WHITE_THRESHOLD = 240
+def pixel_to_NB(pixel): #permet de choisir le contraste de la conversion en noir et blanc
+    return 1 if pixel > BLACK_WHITE_THRESHOLD else 0
+
+IMAGE_NB = IMAGE_TREATED.point(pixel_to_NB, mode='1')
+
 
 """
 TYPES
@@ -122,6 +153,7 @@ class Etoile_image: #Type enregistrement pour les étoiles de l'image
         self.F2 = None                  #Deuxième feature
         self.F2_length = None           #Longueur totale des segments de F2
         self.normalized_map = None      #Etoiles proches et leurs coordonnees dans la base adaptée à cet étoile
+        self.closest_star = None
 
         self.starmatch = None           #Objet Star correspondant si trouvé
 
@@ -285,12 +317,36 @@ def calcul_double_triangle_feature(M0, M1, M2, M3): #appelé sur M0,M2,M3,M4 pou
 def calcul_total_feature_length(dtf):
     return sum([dtf[i] for i in range(6,12)])
 
-def changement_base_2d(M0, M1, image_star_list):
+def changement_image_vers_normalise(M0, M1, image_star_list):
     #Normalisation de la liste des coordonnees des etoiles en fonction de deux points/etoiles de l'image
     E1 = vectpp(M0.xy, M1.xy)
     E2 = (-E1[1], E1[0])
     k = norm2_sqr(E1)
     return [(etoile, (dot_prod2(vectpp(M0.xy, etoile.xy), E1)/k, dot_prod2(vectpp(M0.xy, etoile.xy), E2)/k)) for etoile in image_star_list]
+
+def changement_normalise_vers_image(M0, M1, map):
+    #Calcul des coordonnées sur l'image d'une liste de coordonnées normalsiées
+    E1 = vectpp(M0.xy, M1.xy)
+    E2 = (-E1[1], E1[0])
+
+    L=[]
+    for starandvect in map:
+        x = E1[0]*starandvect[1][0] + E2[0]*starandvect[1][1] + M0.x
+        y = E1[1]*starandvect[1][0] + E2[1]*starandvect[1][1] + M0.y
+        L.append((x,y))
+    return L
+
+def affiche_etoiles(L):
+    layer = Image.new("RGBA", SIZE, (255, 255, 255, 0)) #cree une image transparente pour afficher le texte sur fond transparent avant de le combiner à image_original
+    drawing_instance = ImageDraw.Draw(layer)
+    image_copy = IMAGE_ORIGINAL.copy().convert('RGBA')
+    r = 2
+    (x,y)=L[0]
+    drawing_instance.ellipse((x-r,y-r,x+r,y+r), outline = (255, 0, 255, 255), width = 1)
+    for (x,y) in L[1:]:
+        drawing_instance.ellipse((x-r,y-r,x+r,y+r), outline = (0, 255, 255, 255), width = 1)
+    return Image.alpha_composite(image_copy, layer)
+
 
 def calcul_map_dtf_tfl_2d(M0, image_star_list):
     '''
@@ -299,6 +355,7 @@ def calcul_map_dtf_tfl_2d(M0, image_star_list):
 
     starandvect_list = [(M, vectpp(M0.xy, M.xy)) for M in image_star_list]
     best_4 = closest_nstars(starandvect_list, 4, False, 2)
+    M0.closest_star = best_4[0][0]
     E1 = best_4[0][1]
     E2 = (-E1[1], E1[0])
     k = norm2_sqr(E1)
@@ -317,7 +374,6 @@ def calcul_map_dtf_tfl_2d(M0, image_star_list):
     M0.F1_length = calcul_total_feature_length(F1)
     M0.F2_length = calcul_total_feature_length(F2)
     M0.normalized_map = L
-
     return
 
 
@@ -418,14 +474,10 @@ def pix_list_of_star(image, pos, pixel_list): #détecte tous les pixels blancs "
     image.putpixel(pos, 0)
     x,y = pos
     width,height = image.size
-    if x+1<width and image.getpixel((x+1,y)) == 1:
-        pix_list_of_star(image, (x+1,y), pixel_list)
-    if y+1<height and image.getpixel((x,y+1)) == 1:
-        pix_list_of_star(image, (x,y+1), pixel_list)
-    if 0<=x-1 and image.getpixel((x-1,y)) == 1:
-        pix_list_of_star(image, (x-1,y), pixel_list)
-    if 0<=y-1 and image.getpixel((x,y-1)) == 1:
-        pix_list_of_star(image, (x,y-1), pixel_list)
+    for i in [+1,0,-1]:
+        for j in [+1,0,-1]:
+            if 0<=x+i<width and 0<=y+j<=height and image.getpixel((x+i,y+j)) == 1: #le pixel central a déjà été colorié en noir
+                pix_list_of_star(image, (x+i,y+j), pixel_list)
     return pixel_list
 
 def new_star(image, pos, star_list):
@@ -456,19 +508,6 @@ centroids.save(CENTROID_SAVE_PATH)
 '''
 IDENTIFICATION
 '''
-
-def choose_random(liste_etoiles, lambd): #choisit "lambd" etoiles au hasard sur l'image
-    n = len(liste_etoiles)
-    if(n<4):
-        print("PAS ASSEZ D'ETOILES")
-        return None
-    elif (4<=n<lambd):
-        return liste_etoiles
-    elif (lambd<n):
-        L=[]
-        for i in range(n, n-lambd): #???? je fous quoi
-            L.append(liste_etoiles.pop(random.randint(0,i-1))) #detruit liste_etoiles ??? a refaire
-        return L
 
 def affiche_noms_pillow(liste_etoiles_image): #affiche le nom de l'etoile identifiee pour chaque etoile de l'image
     text_layer = Image.new("RGBA", SIZE, (255, 255, 255, 0)) #cree une image transparente pour afficher le texte sur fond transparent avant de le combiner à image_original
@@ -511,10 +550,18 @@ def get_by_attribute(data_base, attribute, val): #sûrement possible de faire pl
         return next((star for star in data_base if star.hip == val), [None])
 
 
-'''
-for star in DATA_BASE:
-    drawmap(star.gnomic_projection_map)
-'''
+def choose_random(liste_etoiles, lambd): #choisit "lambd" etoiles au hasard sur l'image
+    n = len(liste_etoiles)
+    if(n<4):
+        print("PAS ASSEZ D'ETOILES")
+        return None
+    elif (4<=n<lambd):
+        return liste_etoiles
+    elif (lambd<n):
+        L=[]
+        for i in range(n, n-lambd): #???? je fous quoi
+            L.append(liste_etoiles.pop(random.randint(0,i-1))) #detruit liste_etoiles ??? a refaire
+        return L
 
 #LISTE_ETOILES_REF = choose_random(LISTE_ETOILES_IMAGE, LAMBD)
 LISTE_ETOILES_REF = LISTE_ETOILES_IMAGE
@@ -523,11 +570,14 @@ for etoile in LISTE_ETOILES_REF:
     calcul_map_dtf_tfl_2d(etoile, LISTE_ETOILES_IMAGE)
     #drawmap(etoile.normalized_map)
 
-
 bestr_score, bestmatchlist = -1, []
 for etoile in LISTE_ETOILES_REF:
-    D0 = closest_dtf(etoile.F1, DATA_BASE)
-    r_score, matchlist = identify(D0, etoile)
+    D01 = closest_dtf(etoile.F1, DATA_BASE)
+    r_score, matchlist = identify(D01, etoile)
+    if r_score > bestr_score:
+        bestr_score, bestmatchlist = r_score, matchlist
+    D02 = closest_dtf(etoile.F2, DATA_BASE)
+    r_score, matchlist = identify(D02, etoile)
     if r_score > bestr_score:
         bestr_score, bestmatchlist = r_score, matchlist
 
@@ -540,10 +590,14 @@ results = affiche_noms_pillow(LISTE_ETOILES_IMAGE)
 results.show("Étoiles reconnues")
 #results.save(RESULTS_SAVE_PATH)
 
+IMAGE_NB.show()
+central_star = bestmatchlist[1][1]
+if central_star.starmatch.gnomic_projection_map == None: #ne devrait pas arriver, verifier pk ça arrive
+    central_star.starmatch.load_gnomic()
+
+L = changement_normalise_vers_image(central_star, central_star.closest_star, central_star.starmatch.gnomic_projection_map)
+test = affiche_etoiles(L)
+test.show()
 
 resultspdf = affiche_noms_pdf(LISTE_ETOILES_IMAGE)
 resultspdf.output(RESULTSPDF_SAVE_PATH, 'F')
-
-
-#Del = get_by_attribute(DATA_BASE, "bayer", "Del")
-#drawmap(Del.gnomic_projection_map)
