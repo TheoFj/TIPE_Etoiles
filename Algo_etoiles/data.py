@@ -9,8 +9,6 @@ def strbis(s):
     return None if (s=='' or s=='#N/A') else str(s)
 def fltbis(s):
     return None if (s=='' or s=='#N/A') else float(s)
-def unidecode(s):
-    return None if (s=='' or s=="#N/A") else bytes(s).decode("utf-8")
 
 def parse_constellation_line(line):
     links = []
@@ -38,33 +36,34 @@ def parse_constellation_file(filename):
             data[name] = (n, links)
     return data
 
-csv_data_base = open(config.DATA_BASE_PATH)
-next(csv_data_base) #skip la premiere ligne
-reader = csv.reader(csv_data_base, delimiter=',')
+def parse_database_file(filename):
+    csv_data_base = open(filename, "r", encoding="utf-8")
+    next(csv_data_base) #skip la premiere ligne
+    reader = csv.reader(csv_data_base, delimiter=',')
 
-DATA_BASE = [types_perso.Star(                      #construction de DATA_BASE: liste d'objets de type Star, conversions un peu inutiles mais copiees
-                int(row[0]),            #id
-                intbis(row[1]),         #hip
-                strbis(row[2]),         #bayer
-                strbis(row[3]),         #flam
-                str(row[4]),            #const
-                strbis(row[5]),         #proper
-                float(row[6]),          #ra
-                float(row[7]),          #dec
-                float(row[8]),          #mag
-                strbis(row[11]),        #greek unicode
-                str(row[12]),           #x
-                str(row[13]),           #y
-                str(row[14]),           #z
-                str(row[15]),           #tfl
-                [float(row[i]) for i in range(16,28)],     #dtf
-                strbis(row[28]),        #wiki
-                strbis(row[29]),        #simbad
-                ) for row in reader]
+    data_base = [types_perso.Star(                      #construction de DATA_BASE: liste d'objets de type Star
+                    int(row[0]),           #id
+                    intbis(row[1]),        #hip
+                    strbis(row[2]),        #bayer
+                    strbis(row[3]),        #flam
+                    str(row[4]),           #const
+                    strbis(row[5]),        #proper
+                    float(row[6]),         #ra
+                    float(row[7]),         #dec
+                    float(row[8]),         #mag
+                    strbis(row[11]),       #greek unicode
+                    str(row[12]),          #x
+                    str(row[13]),          #y
+                    str(row[14]),          #z
+                    str(row[15]),          #tfl
+                    [float(row[i]) for i in range(16,28)],     #dtf
+                    strbis(row[28]),       #wiki
+                    strbis(row[29]),       #simbad
+                    ) for row in reader]
 
-csv_data_base.close()
+    csv_data_base.close()
+    return data_base
 
-CON_DIC = parse_constellation_file(config.CON_DIC_PATH)
 
 def choose_random(liste_etoiles, lambd): #a coder: si trop d'etoiles sur l'image, on en choisit lambda pour reduire le temps
     pass

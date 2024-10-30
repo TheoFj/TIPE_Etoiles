@@ -26,7 +26,7 @@ def display_name_calc(proper, con, bayer, flam, hip, id):
 
 class Star: #Type enregistrement pour les étoiles de la base de données
 
-    def __init__(self, id, hip, bayer, flam, con, proper, ra, dec, mag, unicode, x, y, z, tfl, dtf, wikipedia, simbad): #ra et dec en heures et degres dans le csv
+    def __init__(self, id, hip, bayer, flam, con, proper, ra, dec, mag, greek_bay, x, y, z, tfl, dtf, wikipedia, simbad): #ra et dec en heures et degres dans le csv
         self.id = id            #Identifiant dans la base de donnéee
         self.hip = hip          #Identifiant hipparcos (si il existe)
         self.bayer = bayer      #Désignation de bayer  (si elle existe)
@@ -39,7 +39,7 @@ class Star: #Type enregistrement pour les étoiles de la base de données
         self.xyz = (self.x, self.y, self.z) = x, y, z #(cosdec*cosra, cosdec*sinra, sindec) #Position sur la sphere celeste unité
         self.total_feature_length = tfl        #Longueur totale des segments de double_triangle_feature
         self.double_triangle_feature = dtf     #Longueurs et angles des deux triangles formé par les 4 etoiles les plus proches
-        self.uni = unicode      #Caractère unicode grec de la désignation de bayer
+        self.greek_bay = greek_bay      #Caractère unicode grec de la désignation de bayer
         self.wiki = wikipedia   #Lien vers la page wikipedia (si elle existe)
         self.simbad = simbad    #Lien vers la page simbad
 
@@ -48,7 +48,11 @@ class Star: #Type enregistrement pour les étoiles de la base de données
         self.imagematch = None                  #Objet Etoile_Image correspondant si trouvé
         self.gnomic_projection_map = None      #Etoiles proches et leurs coordonnees dans la base adaptée à cet étoile
 
-        self.display_name = display_name_calc(proper, con, bayer, flam, hip, id)    #Nom à afficher si trouvée (bayer, flamsteed ou id)
+        if config.GREEK_DISPLAY:
+            self.display_name = display_name_calc(proper, con, greek_bay, flam, hip, id)    #Nom à afficher si trouvée (bayer, flamsteed ou id)
+        else:
+            self.display_name = display_name_calc(proper, con, bayer, flam, hip, id)    #Nom à afficher si trouvée (bayer, flamsteed ou id)
+
         
     def load_gnomic(self):
         path = config.GNOMIC_PATH + str(self.id) + ".csv"
@@ -73,7 +77,7 @@ class Etoile_image: #Type enregistrement pour les étoiles de l'image
         self.closest_star = None
 
         self.starmatch = None           #Objet Star correspondant si trouvé
-
+'''
     def draw_name_pillow(self, drawing_instance):
         x, y = self.xy
         r = config.DISPLAY_CIRCLE_RADIUS
@@ -94,3 +98,4 @@ class Etoile_image: #Type enregistrement pour les étoiles de l'image
             #print(self.xy, None)
             drawing_instance.ellipse(circle_x0y0x1y1, outline = (255, 0, 0, 255), width = 1)
             
+'''

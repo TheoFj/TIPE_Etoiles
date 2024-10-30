@@ -3,11 +3,6 @@ import config
 import types_perso
 import geometry
 
-IMAGE_ORIGINAL = Image.open(config.IMAGE_PATH)
-IMAGE_GRAYSCALE = IMAGE_ORIGINAL.convert('L')
-
-SIZE = WIDTH, HEIGHT = IMAGE_ORIGINAL.size
-
 def block(var, min, max):
     if var<min: return 0
     elif var>=max: return max-1
@@ -27,21 +22,12 @@ def convolve(image, width, height, mat):
             output.putpixel((x, y), acc)
     return output
 
-if config.CONVOLUTION_OR_NOT == True:
-    MAT = [[ 0,-1, 0],
-           [-1, 4,-1],
-           [ 0,-1, 0]]
-    IMAGE_TREATED = convolve(IMAGE_GRAYSCALE, WIDTH, HEIGHT, MAT)
-    IMAGE_TREATED.show()
-else:
-    IMAGE_TREATED = IMAGE_GRAYSCALE
+MAT = [[ 0,-1, 0],
+        [-1, 4,-1],
+        [ 0,-1, 0]]
 
 def pixel_to_NB(pixel): #permet de choisir le contraste de la conversion en noir et blanc
     return 1 if pixel > config.BLACK_WHITE_THRESHOLD else 0
-
-IMAGE_NB = IMAGE_TREATED.point(pixel_to_NB, mode='1')
-
-IMAGE_NB.show()
 
 def average_pix(pix_list): #renvoie le centroide d'une liste de pixels pris par etoile
     return (sum([pix[0] for pix in pix_list])/len(pix_list), sum([pix[1] for pix in pix_list])/len(pix_list))
@@ -59,11 +45,3 @@ def pix_list_of_star(image, pos, pixel_list): #détecte tous les pixels blancs "
 
 def new_star(image, pos, star_list):
     star_list.append(types_perso.Etoile_image(average_pix(pix_list_of_star(image, pos, [])))) #ajoute à star_list le centre de la liste des pixels d'une étoile détectée en pos
-
-image_temp = IMAGE_NB.copy() #utile car la fonction "new_star" a besoin de modifier l'image
-LISTE_ETOILES_IMAGE = []
-for y in range(HEIGHT): #remplit la liste des coordonnéees des étoiles sur l'image
-    for x in range(WIDTH):
-        if image_temp.getpixel((x,y)) == 1:
-            new_star(image_temp, (x,y), LISTE_ETOILES_IMAGE)
-
