@@ -20,12 +20,13 @@ img_size = img_width, img_height = img_original.size
 
 if config.CONVOLUTION_OR_NOT == True:
     img_treated = img_fnc.convolve(img_grayscale, img_width, img_height, img_fnc.MAT)
+    img_treated.show()
 else:
     img_treated = img_grayscale
 
 img_nb = img_treated.point(img_fnc.pixel_to_NB, mode='1')
 
-img_nb.show("Noir et Blanc")
+img_nb.show()
 
 image_temp = img_nb.copy() #utile car la fonction "new_star" a besoin de modifier l'image
 LISTE_ETOILES_IMAGE = []
@@ -35,7 +36,7 @@ for y in range(img_height): #remplit la liste des coordonnéees des étoiles sur
             img_fnc.new_star(image_temp, (x,y), LISTE_ETOILES_IMAGE)
 
 img_withcentroids = display.display_centroids(LISTE_ETOILES_IMAGE, img_original, img_size)
-img_withcentroids.show("Centroïdes des étoiles repérées")
+#img_withcentroids.show("Centroïdes des étoiles repérées")
 
 #Import BDD
 
@@ -82,7 +83,7 @@ back_projection = display.affiche_etoiles(geometry.changement_normalise_vers_ima
 back_projection.show()
 
 results = display.affiche_resultat_pillow(LISTE_ETOILES_IMAGE, img_original, img_size, CON_DIC)
-results.show("Étoiles reconnues")
+results.show()
 
 
 #Sauvegarde

@@ -1,1 +1,0 @@
-Si treated_data ne contient que ce fichier, exécuter traitement_bdd.py

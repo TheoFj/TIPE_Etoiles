@@ -13,13 +13,13 @@ CON_DIC_PATH = "Algo_etoiles/constellations_graph.txt"
 FONT = ImageFont.truetype(font = FONT_PATH, size = FONT_SIZE)
 ID_THRESHOLD = 0.15
 
-IMAGE_PATH = "Algo_etoiles/images/Orion.jpg"
-CONVOLUTION_OR_NOT = False
-BLACK_WHITE_THRESHOLD = 125
+IMAGE_PATH = "Algo_etoiles/images/lucas7.jpeg"
+CONVOLUTION_OR_NOT = True
+BLACK_WHITE_THRESHOLD = 50
 
+SAVE_IMAGE = False
+RESULTS_SAVE_PATH = "resultats/ccc.png"
 SAVE_CENTROIDS = False
 CENTROIDS_SAVE_PATH = "resultats/aaaaa.png"
-SAVE_IMAGE = False
-RESULTS_SAVE_PATH = "resultats/aaaaa.png"
 SAVE_PDF = False
 PDF_SAVE_PATH = "resultatspdf/aaaaa.pdf"
