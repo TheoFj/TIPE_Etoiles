@@ -52,9 +52,9 @@ def parse_database_file(filename):
                     float(row[7]),         #dec
                     float(row[8]),         #mag
                     strbis(row[11]),       #greek unicode
-                    str(row[12]),          #x
-                    str(row[13]),          #y
-                    str(row[14]),          #z
+                    float(row[12]),          #x
+                    float(row[13]),          #y
+                    float(row[14]),          #z
                     str(row[15]),          #tfl
                     [float(row[i]) for i in range(16,28)],     #dtf
                     strbis(row[28]),       #wiki

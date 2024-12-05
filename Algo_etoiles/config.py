@@ -11,14 +11,16 @@ GNOMIC_PATH = "Algo_etoiles/treated_data/"
 FONT_PATH = "Algo_etoiles/arial.ttf"
 CON_DIC_PATH = "Algo_etoiles/constellations_graph.txt"
 FONT = ImageFont.truetype(font = FONT_PATH, size = FONT_SIZE)
-ID_THRESHOLD = 0.15
 
-IMAGE_PATH = "Algo_etoiles/images/lucas7.jpeg"
-CONVOLUTION_OR_NOT = True
-BLACK_WHITE_THRESHOLD = 50
+ID_THRESHOLD = 0.15
+ID_THRESHOLD2 = ID_THRESHOLD/10
+
+IMAGE_PATH = "Algo_etoiles/images/UMa3.png"
+CONVOLUTION_OR_NOT = False
+BLACK_WHITE_THRESHOLD = 110
 
 SAVE_IMAGE = False
-RESULTS_SAVE_PATH = "resultats/ccc.png"
+RESULTS_SAVE_PATH = "resultats/UMa3.png"
 SAVE_CENTROIDS = False
 CENTROIDS_SAVE_PATH = "resultats/aaaaa.png"
 SAVE_PDF = False

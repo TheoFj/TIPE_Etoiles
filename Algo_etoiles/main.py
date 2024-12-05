@@ -65,25 +65,47 @@ bestr_score, bestmatchlist = -1, []
 for etoile in LISTE_ETOILES_REF:
 
     D01 = identification.closest_dtf(etoile.F1, DATA_BASE)
-    r_score, matchlist, match = identification.identify(D01, etoile)
+    D01.load_gnomic()
+    r_score, matchlist = identification.match_maps(etoile.normalized_map, D01.gnomic_projection_map, config.ID_THRESHOLD)
     if r_score > bestr_score:
-        bestr_score, bestmatchlist, bestcentral_star, bestmatch = r_score, matchlist, D01, match 
+        bestr_score, bestmatchlist, bestcentral_star, bestmatch = r_score, matchlist, D01, etoile 
 
     D02 = identification.closest_dtf(etoile.F2, DATA_BASE)
-    r_score, matchlist, match = identification.identify(D02, etoile)
+    D02.load_gnomic()
+    r_score, matchlist = identification.match_maps(etoile.normalized_map, D02.gnomic_projection_map, config.ID_THRESHOLD)
     if r_score > bestr_score:
-        bestr_score, bestmatchlist, bestcentral_star, bestmatch = r_score, matchlist, D02, match 
+        bestr_score, bestmatchlist, bestcentral_star, bestmatch = r_score, matchlist, D02, etoile 
 
-for (starid, etoile) in bestmatchlist:
-    star = get_by_attribute(DATA_BASE, "id", starid)
-    star.imagematch = etoile
-    etoile.starmatch = star
+(idA, etoileA), (idB, etoileB) = geometry.furthest_stars(bestmatchlist)
+starA = get_by_attribute(DATA_BASE, "id", idA)
+starB = get_by_attribute(DATA_BASE, "id", idB)
+imgmap = geometry.changement_image_vers_normalise(etoileA, etoileB, LISTE_ETOILES_IMAGE)
+mapbdd = geometry.calcul_gnomic(starA, starB, DATA_BASE)
+newr_score, newmatchlist = identification.match_maps(imgmap, mapbdd, config.ID_THRESHOLD2)
 
-back_projection = display.affiche_etoiles(geometry.changement_normalise_vers_image(bestmatch, bestmatch.closest_star, bestcentral_star.gnomic_projection_map), bestmatch, img_size, img_original)
-back_projection.show()
+print(f"r_score étoiles eloignées: {newr_score}\n Ancien r_score: {bestr_score}")
+
+#Affichage des résultats:
+
+if newr_score >= bestr_score:
+    for (star, etoile) in newmatchlist:
+        star.imagematch = etoile
+        etoile.starmatch = star
+    back_projection = display.affiche_etoiles(geometry.changement_normalise_vers_image(etoileA, etoileB, mapbdd), etoileA, img_size, img_original)
+
+else:
+    for (starid, etoile) in bestmatchlist:
+        star = get_by_attribute(DATA_BASE, "id", starid)
+        star.imagematch = etoile
+        etoile.starmatch = star
+    back_projection = display.affiche_etoiles(geometry.changement_normalise_vers_image(bestmatch, bestmatch.closest_star, bestcentral_star.gnomic_projection_map), bestmatch, img_size, img_original)
+
 
 results = display.affiche_resultat_pillow(LISTE_ETOILES_IMAGE, img_original, img_size, CON_DIC)
-results.show()
+
+
+back_projection.show() #Projection de la base de données sur l'image: permet de
+results.show() #Correspondances trouvées
 
 
 #Sauvegarde

@@ -8,7 +8,7 @@ import geometry
 """
 CONSTANTES
 """
-FOV = 90
+FOV = 50
 L = FOV*pi/180 #fov en radians 
 L2 = (L**2)/2 #rayon du disque des etoiles prises en compte dans "calcul_gnomic_dtf_tfl" (cf. 4.1 https://www.mdpi.com/1424-8220/20/11/3027)
 DATA_BASE_NAME = "athyg_modified_vmagmax6.csv"
@@ -96,7 +96,7 @@ def calcul_gnomic_dtf_tfl(D0, star_list):
     best_3 = geometry.closest_nstars(C, 3, False, 3)
     E1 = best_3[0][1]
     E2 = geometry.cross_prod3(D0.xyz, E1) #rotation de pi/2 de E1
-    k = geometry.norm3_sqr(best_3[0][1])
+    k = geometry.norm3_sqr(E1) #k = geometry.norm3_sqr(best_3[0][1]) retirer ce comm si ca marche
 
     L = [(starandvect[0], (geometry.dot_prod3(starandvect[1], E1)/k, geometry.dot_prod3(starandvect[1], E2)/k)) for starandvect in C]
 

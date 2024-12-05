@@ -1,5 +1,6 @@
 from math import*
 import types_perso
+import config
 
 #certaines fonctions ne sont pas utilisees
 
@@ -107,6 +108,46 @@ def closest_nstars(starandvect_list, n, with_zero, dim):
         return [best_n[i][1] for i in range(0,n)] #on ne renvoie pas le dernier, indicé n, car on ne renvoie que les n meilleures
     else:
         return [best_n[i][1] for i in range(1,n+1)] #on ne renvoie pas le numero 0 car il s'agit de l'etoile "pos"
+
+def furthest_stars(matchlist):
+
+    a = matchlist[0]
+    b = matchlist[0]
+    maxdsqr = 0
+    n = len(matchlist)
+    for i in range(n):
+        for j in range(i+1,n):
+            c = matchlist[i][1]
+            d = matchlist[j][1]
+            dsqr = (d.x-c.x)**2 + (d.y-c.y)**2
+            if dsqr>maxdsqr:
+                a = matchlist[i]
+                b = matchlist[j]
+                maxdsqr = dsqr
+    return (a, b)
+
+def calcul_gnomic(starA, starB, star_list):
+
+    #PROJECTION SUR LE PLAN TANGEANT AU CERCLE UNITE
+    #permet de simuler une photo prise par un capteur plan
+    # (cf. https://www.mdpi.com/1424-8220/20/11/3027 section 4.1)
+    C = []
+    for star in star_list:
+        p = dot_prod3(starA.xyz, star.xyz)
+        if p>0:
+            proj_vect = (star.x/p - starA.x), (star.y/p - starA.y), (star.z/p - starA.z)
+            C.append((star, proj_vect))
+
+    #CHANGEMENT DE BASE
+    pAB = dot_prod3(starA.xyz, starB.xyz)
+    E1 = (starB.x/pAB - starA.x), (starB.y/pAB - starA.y), (starB.z/pAB - starA.z)
+    E2 = cross_prod3(starA.xyz, E1) #rotation de pi/2 de E1
+    k = norm3_sqr(E1)
+
+    L = [(starandvect[0], (dot_prod3(starandvect[1], E1)/k, dot_prod3(starandvect[1], E2)/k)) for starandvect in C]
+
+    return L
+
 
 def changement_image_vers_normalise(M0, M1, image_star_list):
     #Normalisation de la liste des coordonnees des etoiles en fonction de deux points/etoiles de l'image
