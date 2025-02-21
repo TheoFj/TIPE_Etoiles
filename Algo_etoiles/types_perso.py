@@ -55,13 +55,14 @@ class Star: #Type enregistrement pour les étoiles de la base de données
 
         
     def load_gnomic(self):
-        path = config.GNOMIC_PATH + str(self.id) + ".csv"
-        self.gnomic_projection_map = []
-        with open(path, newline='') as file:
-            reader = csv.reader(file, delimiter=',')
-            for row in reader:
-                starid, x, y = int(row[0]), float(row[1]), float(row[2])
-                self.gnomic_projection_map.append((starid,(x,y)))
+        if self.gnomic_projection_map == None:
+            path = config.GNOMIC_PATH + str(self.id) + ".csv"
+            self.gnomic_projection_map = []
+            with open(path, newline='') as file:
+                reader = csv.reader(file, delimiter=',')
+                for row in reader:
+                    starid, x, y = int(row[0]), float(row[1]), float(row[2])
+                    self.gnomic_projection_map.append((starid,(x,y)))
 
 
 class Etoile_image: #Type enregistrement pour les étoiles de l'image

@@ -14,13 +14,16 @@ FONT = ImageFont.truetype(font = FONT_PATH, size = FONT_SIZE)
 
 ID_THRESHOLD = 0.15
 ID_THRESHOLD2 = ID_THRESHOLD/10
+S = 1
+L = 1
+N_ITE = 100
 
-IMAGE_PATH = "Algo_etoiles/images/UMa3.png"
+IMAGE_PATH = "Algo_etoiles/allthesky/aquila28v-b.jpg"
 CONVOLUTION_OR_NOT = False
 BLACK_WHITE_THRESHOLD = 110
 
-SAVE_IMAGE = False
-RESULTS_SAVE_PATH = "resultats/UMa3.png"
+SAVE_IMAGE = True
+RESULTS_SAVE_PATH = "resultats/dadsqdqdazzdqs-b.png"
 SAVE_CENTROIDS = False
 CENTROIDS_SAVE_PATH = "resultats/aaaaa.png"
 SAVE_PDF = False

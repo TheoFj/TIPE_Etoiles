@@ -1,6 +1,8 @@
 from PIL import Image
 from math import *
 import csv
+import random
+
 import config
 import types_perso
 import display
@@ -76,35 +78,40 @@ for etoile in LISTE_ETOILES_REF:
     if r_score > bestr_score:
         bestr_score, bestmatchlist, bestcentral_star, bestmatch = r_score, matchlist, D02, etoile 
 
-(idA, etoileA), (idB, etoileB) = geometry.furthest_stars(bestmatchlist)
-starA = get_by_attribute(DATA_BASE, "id", idA)
-starB = get_by_attribute(DATA_BASE, "id", idB)
-imgmap = geometry.changement_image_vers_normalise(etoileA, etoileB, LISTE_ETOILES_IMAGE)
-mapbdd = geometry.calcul_gnomic(starA, starB, DATA_BASE)
-newr_score, newmatchlist = identification.match_maps(imgmap, mapbdd, config.ID_THRESHOLD2)
 
-print(f"r_score étoiles eloignées: {newr_score}\n Ancien r_score: {bestr_score}")
+#chargement des etoiles depuis la bdd
+bestmatchlist = [(get_by_attribute(DATA_BASE, "id", starid), etoile) for (starid, etoile) in bestmatchlist]
+firstr_score = bestr_score
+for i in range(config.N_ITE):
+    (starA, etoileA), (starB, etoileB) = (random.choice(bestmatchlist), random.choice(bestmatchlist))
+    if starA!=starB:
+        imgmap = geometry.changement_image_vers_normalise(etoileA, etoileB, LISTE_ETOILES_IMAGE)
+        mapbdd = geometry.calcul_gnomic(starA, starB, DATA_BASE)
+        newr_score, newmatchlist = identification.match_maps(imgmap, mapbdd, config.ID_THRESHOLD2)
+        if newr_score > bestr_score:
+            #bestA = 
+            #bestB = 
+            bestr_score = newr_score
+            bestmatchlist = newmatchlist #coût caché
+            bestcentral_star = starA # bzr ici faudrait inverser c pas logique mais ca marche comme ca
+            bestmatch = etoileA # bzr ici faudrait inverser c pas logique mais ca marche comme ca
 
-#Affichage des résultats:
 
-if newr_score >= bestr_score:
-    for (star, etoile) in newmatchlist:
-        star.imagematch = etoile
-        etoile.starmatch = star
-    back_projection = display.affiche_etoiles(geometry.changement_normalise_vers_image(etoileA, etoileB, mapbdd), etoileA, img_size, img_original)
+print(f"R_score apres iterations: {bestr_score}\nR_score avant iterations: {firstr_score}")
 
-else:
-    for (starid, etoile) in bestmatchlist:
-        star = get_by_attribute(DATA_BASE, "id", starid)
-        star.imagematch = etoile
-        etoile.starmatch = star
-    back_projection = display.affiche_etoiles(geometry.changement_normalise_vers_image(bestmatch, bestmatch.closest_star, bestcentral_star.gnomic_projection_map), bestmatch, img_size, img_original)
+for (star, etoile) in bestmatchlist:
+    star.imagematch = etoile
+    etoile.starmatch = star
+
+bestmap = geometry.calcul_gnomic(starA, starB, DATA_BASE)#recalcul mais flm pg
+'''REFAIRE LA BACKPROJ'''
+#back_projection = display.affiche_etoiles(geometry.changement_normalise_vers_image(bestmatch, bestmatch.closest_star, bestcentral_star.gnomic_projection_map), bestmatch, img_size, img_original)
 
 
 results = display.affiche_resultat_pillow(LISTE_ETOILES_IMAGE, img_original, img_size, CON_DIC)
 
 
-back_projection.show() #Projection de la base de données sur l'image: permet de
+#back_projection.show() #Projection de la base de données sur l'image: permet de voir la difference et les erreurs de positionnement de la projection
 results.show() #Correspondances trouvées
 
 
