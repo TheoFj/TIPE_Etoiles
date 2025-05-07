@@ -71,7 +71,7 @@ class Star: #Type enregistrement pour les étoiles de la base de données
                     self.gnomic_projection_map.append((starid,(x,y)))
 
     def save_gnomic(self):
-        path = "Algo_etoiles/treated_data/"+str(self.id)+".csv"
+        path = config.GNOMIC_PATH + str(self.id) + ".csv"
         with open(path, 'w', newline='') as csvfile:
             spamwriter = csv.writer(csvfile, delimiter=',')
             for (star, (x,y)) in self.gnomic_projection_map:

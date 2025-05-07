@@ -26,10 +26,9 @@ def nearest_nstars(node, targetpos, n, dim, dir, heap=[], withtarget=False):
         return
     
     dist = distsqr(node.star.pos, targetpos, dim)
-    
     #On met des distances negaties pour simuler un max-heap : on veut que le pop retire à chaque fois celui dont la distance à targetpos est maximale càd la moins bonne etoile
     if (dist!=0 or withtarget):
-        heapq.heappush(heap, (-dist, node.star))
+        heapq.heappush(heap, (-dist, node.star.pos, node.star)) #le star.pos, bien que super chiant, sert a differencier des etoiles pouvant etre a la meme distance de target, la heapq comparant en ordre lexicographique, cela evite de comparer les objets etoile
     if len(heap) > n:
         heapq.heappop(heap)
 

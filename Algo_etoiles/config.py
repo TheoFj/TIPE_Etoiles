@@ -7,7 +7,7 @@ DISPLAY_CIRCLE_RADIUS = 3 #rayon des cercles lors de l'affichage des etoiles tro
 GREEK_DISPLAY = False
 
 DATA_BASE_TREATED_PATH = "Algo_etoiles/databasecsv/treated_athyg_modified_vmagmax6.csv"
-GNOMIC_PATH = "Algo_etoiles/treated_data/"
+GNOMIC_PATH = "Algo_etoiles/star_maps/"
 FONT_PATH = "Algo_etoiles/arial.ttf"
 CON_DIC_PATH = "Algo_etoiles/constellations_graph.txt"
 FONT = ImageFont.truetype(font = FONT_PATH, size = FONT_SIZE)

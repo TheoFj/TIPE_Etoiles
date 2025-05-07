@@ -64,6 +64,14 @@ def parse_database_file(filename):
     csv_data_base.close()
     return data_base
 
+def get_by_attribute(data_base, attribute, val):
+    if attribute == "bayer":
+        return next((star for star in data_base if star.bayer == val), [None])
+    elif attribute == "id":
+        return next((star for star in data_base if star.id == val), [None])
+    elif attribute == "hip":
+        return next((star for star in data_base if star.hip == val), [None])
+
 
 def choose_random(liste_etoiles, lambd): #a coder: si trop d'etoiles sur l'image, on en choisit lambda pour reduire le temps
     pass

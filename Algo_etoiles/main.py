@@ -10,6 +10,7 @@ import data
 import geometry
 import identification
 import img_fnc as img_fnc
+import kdtree
 
 #ALGORITHME: https://www.mdpi.com/1424-8220/20/11/3027
 
@@ -37,31 +38,21 @@ for y in range(img_height): #remplit la liste des coordonnéees des étoiles sur
         if image_temp.getpixel((x,y)) == 1:
             img_fnc.new_star(image_temp, (x,y), LISTE_ETOILES_IMAGE)
 
-img_withcentroids = display.display_centroids(LISTE_ETOILES_IMAGE, img_original, img_size)
-#img_withcentroids.show("Centroïdes des étoiles repérées")
 
 #Import BDD
 
 DATA_BASE = data.parse_database_file(config.DATA_BASE_TREATED_PATH)
 CON_DIC = data.parse_constellation_file(config.CON_DIC_PATH)
 
-#Accesseurs
-
-def get_by_attribute(data_base, attribute, val):
-    if attribute == "bayer":
-        return next((star for star in data_base if star.bayer == val), [None])
-    elif attribute == "id":
-        return next((star for star in data_base if star.id == val), [None])
-    elif attribute == "hip":
-        return next((star for star in data_base if star.hip == val), [None])
-
 #Boucles principales
 
 #LISTE_ETOILES_REF = data.choose_random(LISTE_ETOILES_IMAGE, LAMBD)
 LISTE_ETOILES_REF = LISTE_ETOILES_IMAGE
 
+TREE = kdtree.build_tree(LISTE_ETOILES_IMAGE, dim=2, dir=0)
+
 for etoile in LISTE_ETOILES_REF:
-    geometry.calcul_map_dtf_tfl_2d(etoile, LISTE_ETOILES_IMAGE)
+    geometry.calcul_map_dtf_tfl_2d(etoile, LISTE_ETOILES_IMAGE, TREE)
 
 bestr_score, bestmatchlist = -1, []
 for etoile in LISTE_ETOILES_REF:
@@ -80,7 +71,7 @@ for etoile in LISTE_ETOILES_REF:
 
 
 #chargement des etoiles depuis la bdd
-bestmatchlist = [(get_by_attribute(DATA_BASE, "id", starid), etoile) for (starid, etoile) in bestmatchlist]
+bestmatchlist = [(data.get_by_attribute(DATA_BASE, "id", starid), etoile) for (starid, etoile) in bestmatchlist]
 print(f"R_score avant iterations : {bestr_score}")
 
 for i in range(config.N_ITE):
@@ -107,7 +98,6 @@ bestmap = geometry.calcul_gnomic(starA, starB, DATA_BASE)#recalcul mais flm pg
 '''REFAIRE LA BACKPROJ'''
 #back_projection = display.affiche_etoiles(geometry.changement_normalise_vers_image(bestmatch, bestmatch.closest_star, bestcentral_star.gnomic_projection_map), bestmatch, img_size, img_original)
 
-
 results = display.affiche_resultat_pillow(LISTE_ETOILES_IMAGE, img_original, img_size, CON_DIC)
 
 
@@ -118,6 +108,8 @@ results.show() #Correspondances trouvées
 #Sauvegarde
 
 if config.SAVE_CENTROIDS:
+    img_withcentroids = display.display_centroids(LISTE_ETOILES_IMAGE, img_original, img_size)
+    img_withcentroids.show("Centroïdes des étoiles repérées")
     img_withcentroids.save(config.CENTROIDS_SAVE_PATH)
 if config.SAVE_IMAGE:
     results.save(config.RESULTS_SAVE_PATH)

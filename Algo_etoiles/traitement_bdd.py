@@ -41,10 +41,10 @@ def calcul_gnomic_dtf_tfl(D0, star_list, tree):
     '''
     # (cf. https://www.mdpi.com/1424-8220/20/11/3027 section 4.2)
 
-    nearest_3 = kdtree.nearest_nstars(tree, D0.pos, n=3, dim=3, dir=0)
-    D3 = heapq.heappop(nearest_3)[1]
-    D2 = heapq.heappop(nearest_3)[1]
-    D1 = heapq.heappop(nearest_3)[1]
+    nearest_3 = kdtree.nearest_nstars(tree, D0.pos, n=3, dim=3, dir=0, withtarget=False)
+    D3 = heapq.heappop(nearest_3)[2]
+    D2 = heapq.heappop(nearest_3)[2]
+    D1 = heapq.heappop(nearest_3)[2]
 
     # (E1, E2) est la nouvelle base dans laquelle sont exprimees les coordonnes des etoiles projetees
     # permet d'aligner les systemes de coordonnees basee de donnee/image afin d'avoir des donnees comparables
