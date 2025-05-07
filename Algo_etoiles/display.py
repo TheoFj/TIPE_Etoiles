@@ -1,4 +1,3 @@
-#from fpdf import FPDF
 from PIL import Image, ImageDraw
 import config
 
@@ -12,7 +11,7 @@ def affiche_etoiles(L, central, size, image_original):
     for (x,y) in L:
         drawing_instance.ellipse((x-r,y-r,x+r,y+r), outline = (0, 255, 255, 255), width = 1)
     r=2*r
-    (xc, yc) = central.xy
+    (xc, yc) = central.pos
     drawing_instance.ellipse((xc-r,yc-r,xc+r,yc+r), outline = (255, 0, 255, 255), width = 2)
     return Image.alpha_composite(image_copy, layer)
 
@@ -42,7 +41,7 @@ def display_centroids(liste_etoiles_image, image_original, size):
 #RESULTATS
 
 def draw_name_pillow(etoile, green_draw, red_draw):
-    x, y = etoile.xy
+    x, y = etoile.pos
     r = config.DISPLAY_CIRCLE_RADIUS
     
     if y-r-4-config.FONT_SIZE>0:
@@ -54,7 +53,7 @@ def draw_name_pillow(etoile, green_draw, red_draw):
     circle_x0y0x1y1 = (x-r, y-r, x+r, y+r)
 
     if etoile.starmatch != None:
-        green_draw.text(textxy, etoile.starmatch.display_name, font = config.FONT, fill = 1, anchor = mode)
+        green_draw.text(textxy, etoile.starmatch.displayname(), font = config.FONT, fill = 1, anchor = mode)
         green_draw.ellipse(circle_x0y0x1y1, outline = 1, width = 1)
     else:
         red_draw.ellipse(circle_x0y0x1y1, outline = (255,0,0,255), width = 1)
@@ -86,36 +85,3 @@ def affiche_resultat_pillow(liste_etoiles_image, image_original, size, constella
         for y in range(size[1]):
             if green_layer.getpixel((x,y))==1: green_layer2.putpixel((x,y),(0,255,0,255))
     return Image.alpha_composite(image_copy, Image.alpha_composite(red_layer, green_layer2))
-
-
-#RESULTATS PDF
-
-def draw_name_pdf(etoile, pdf):
-    x, y = etoile.xy
-    r = config.DISPLAY_CIRCLE_RADIUS
-    textx, texty = x-2.5*config.FONT_SIZE, y-r-4-config.FONT_SIZE
-    if texty<0:
-        texty = y+r+4
-    circlex, circley = x-r, y-r
-
-    if etoile.starmatch != None:
-        pdf.set_xy(textx, texty)
-        pdf.set_text_color(0, 255, 0)
-        pdf.set_draw_color(0, 255, 0)
-        pdf.write(5, etoile.starmatch.display_name, etoile.starmatch.simbad)
-    else:
-        pdf.set_draw_color(255, 0, 0)
-    pdf.ellipse(circlex, circley, 2*r, 2*r)
-
-def affiche_resultat_pdf(liste_etoiles_image, width, height): #affiche le nom de l'etoile identifiee pour chaque etoile de l'image
-    pdf = FPDF("P", "pt", (width, height))
-    pdf.add_font("police", "", config.FONT_PATH, uni=True)
-    pdf.set_font("police", "", config.FONT_SIZE)
-    pdf.set_margins(0, 0, 0)
-    pdf.set_auto_page_break(False)
-    pdf.add_page()
-    pdf.image(config.IMAGE_PATH, 0, 0, width, height)
-    for etoile in liste_etoiles_image:
-        draw_name_pdf(etoile, pdf)
-    
-    return pdf

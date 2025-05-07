@@ -81,7 +81,8 @@ for etoile in LISTE_ETOILES_REF:
 
 #chargement des etoiles depuis la bdd
 bestmatchlist = [(get_by_attribute(DATA_BASE, "id", starid), etoile) for (starid, etoile) in bestmatchlist]
-firstr_score = bestr_score
+print(f"R_score avant iterations : {bestr_score}")
+
 for i in range(config.N_ITE):
     (starA, etoileA), (starB, etoileB) = (random.choice(bestmatchlist), random.choice(bestmatchlist))
     if starA!=starB:
@@ -96,8 +97,7 @@ for i in range(config.N_ITE):
             bestcentral_star = starA # bzr ici faudrait inverser c pas logique mais ca marche comme ca
             bestmatch = etoileA # bzr ici faudrait inverser c pas logique mais ca marche comme ca
 
-
-print(f"R_score apres iterations: {bestr_score}\nR_score avant iterations: {firstr_score}")
+print(f"R_score apres iterations: {bestr_score}")
 
 for (star, etoile) in bestmatchlist:
     star.imagematch = etoile
@@ -121,5 +121,3 @@ if config.SAVE_CENTROIDS:
     img_withcentroids.save(config.CENTROIDS_SAVE_PATH)
 if config.SAVE_IMAGE:
     results.save(config.RESULTS_SAVE_PATH)
-if config.SAVE_PDF:
-    pass

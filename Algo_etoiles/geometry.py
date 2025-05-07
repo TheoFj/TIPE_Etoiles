@@ -5,10 +5,6 @@ import config
 #certaines fonctions ne sont pas utilisees
 
 #fonctions sur vecteurs de dimension 2
-def flat_dist2(pos1, pos2):
-    return sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)
-def flat_dist2_sqr(pos1, pos2): #permet d'eviter de calculer une racine
-    return (pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2
 def dot_prod2(u, v):
     return u[0]*v[0] + u[1]*v[1]
 def norm2(v):
@@ -21,10 +17,6 @@ def vectpp(p1, p2):
     return (p2[0] - p1[0], p2[1] - p1[1])
 
 #fonctions sur vecteurs de dimension 3
-def flat_dist3(pos1, pos2):
-    return sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2 + (pos1[2] - pos2[2])**2)
-def flat_dist3_sqr(pos1, pos2): #permet d'eviter de calculer une racine
-    return (pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1] )**2 + (pos1[2] - pos2[2])**2
 def dot_prod3(u, v):
     return u[0]*v[0] + u[1]*v[1] + u[2]*v[2]
 def cross_prod3(u,v):
@@ -38,7 +30,7 @@ def norm3_sqr(v):
 
 #angles
 def ang_dist(Star1, Star2): #https://en.wikipedia.org/wiki/Angular_distance
-    p = dot_prod3(Star1.xyz, Star2.xyz)
+    p = dot_prod3(Star1.pos, Star2.pos)
     if p>1: #gère les imprecisions de calcul genre 1.0000000000000002
         return 0.0
     elif p<-1:
@@ -109,23 +101,6 @@ def closest_nstars(starandvect_list, n, with_zero, dim):
     else:
         return [best_n[i][1] for i in range(1,n+1)] #on ne renvoie pas le numero 0 car il s'agit de l'etoile "pos"
 
-def furthest_stars(matchlist):
-
-    a = matchlist[0]
-    b = matchlist[0]
-    maxdsqr = 0
-    n = len(matchlist)
-    for i in range(n):
-        for j in range(i+1,n):
-            c = matchlist[i][1]
-            d = matchlist[j][1]
-            dsqr = (d.x-c.x)**2 + (d.y-c.y)**2
-            if dsqr>maxdsqr:
-                a = matchlist[i]
-                b = matchlist[j]
-                maxdsqr = dsqr
-    return (a, b)
-
 def calcul_gnomic(starA, starB, star_list):
 
     #PROJECTION SUR LE PLAN TANGEANT AU CERCLE UNITE
@@ -133,15 +108,15 @@ def calcul_gnomic(starA, starB, star_list):
     # (cf. https://www.mdpi.com/1424-8220/20/11/3027 section 4.1)
     C = []
     for star in star_list:
-        p = dot_prod3(starA.xyz, star.xyz)
+        p = dot_prod3(starA.pos, star.pos)
         if p>0:
             proj_vect = (star.x/p - starA.x), (star.y/p - starA.y), (star.z/p - starA.z)
             C.append((star, proj_vect))
 
     #CHANGEMENT DE BASE
-    pAB = dot_prod3(starA.xyz, starB.xyz)
+    pAB = dot_prod3(starA.pos, starB.pos)
     E1 = (starB.x/pAB - starA.x), (starB.y/pAB - starA.y), (starB.z/pAB - starA.z)
-    E2 = cross_prod3(starA.xyz, E1) #rotation de pi/2 de E1
+    E2 = cross_prod3(starA.pos, E1) #rotation de pi/2 de E1
     k = norm3_sqr(E1)
 
     L = [(starandvect[0], (dot_prod3(starandvect[1], E1)/k, dot_prod3(starandvect[1], E2)/k)) for starandvect in C]
@@ -151,14 +126,14 @@ def calcul_gnomic(starA, starB, star_list):
 
 def changement_image_vers_normalise(M0, M1, image_star_list):
     #Normalisation de la liste des coordonnees des etoiles en fonction de deux points/etoiles de l'image
-    E1 = vectpp(M0.xy, M1.xy)
+    E1 = vectpp(M0.pos, M1.pos)
     E2 = (-E1[1], E1[0])
     k = norm2_sqr(E1)
-    return [(etoile, (dot_prod2(vectpp(M0.xy, etoile.xy), E1)/k, dot_prod2(vectpp(M0.xy, etoile.xy), E2)/k)) for etoile in image_star_list]
+    return [(etoile, (dot_prod2(vectpp(M0.pos, etoile.pos), E1)/k, dot_prod2(vectpp(M0.pos, etoile.pos), E2)/k)) for etoile in image_star_list]
 
 def changement_normalise_vers_image(M0, M1, map):
     #Calcul des coordonnées sur l'image d'une liste de coordonnées normalsiées
-    E1 = vectpp(M0.xy, M1.xy)
+    E1 = vectpp(M0.pos, M1.pos)
     E2 = (-E1[1], E1[0])
 
     L=[]
@@ -174,7 +149,7 @@ def calcul_map_dtf_tfl_2d(M0, image_star_list):
     Calculs à faire sur chaque étoile (ou une partie des étoiles) de l'image
     '''
 
-    starandvect_list = [(M, vectpp(M0.xy, M.xy)) for M in image_star_list]
+    starandvect_list = [(M, vectpp(M0.pos, M.pos)) for M in image_star_list]
     best_4 = closest_nstars(starandvect_list, 4, False, 2)
     M0.closest_star = best_4[0][0]
     E1 = best_4[0][1]

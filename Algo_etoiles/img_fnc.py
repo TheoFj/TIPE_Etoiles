@@ -22,10 +22,6 @@ def convolve(image, width, height, mat):
             output.putpixel((x, y), acc)
     return output
 
-MAT = [[ 0,-1, 0],
-        [-1, 4,-1],
-        [ 0,-1, 0]]
-
 def pixel_to_NB(pixel): #permet de choisir le contraste de la conversion en noir et blanc
     return 1 if pixel > config.BLACK_WHITE_THRESHOLD else 0
 

@@ -16,14 +16,14 @@ ID_THRESHOLD = 0.15
 ID_THRESHOLD2 = ID_THRESHOLD/10
 S = 1
 L = 1
-N_ITE = 100
+N_ITE = 1000
 
-IMAGE_PATH = "Algo_etoiles/allthesky/aquila28v-b.jpg"
+IMAGE_PATH = "Algo_etoiles/allthesky/ursamajor28v-bmodif.jpg"
 CONVOLUTION_OR_NOT = False
 BLACK_WHITE_THRESHOLD = 110
 
 SAVE_IMAGE = True
-RESULTS_SAVE_PATH = "resultats/dadsqdqdazzdqs-b.png"
+RESULTS_SAVE_PATH = "resultats/ursamajorprime2.png"
 SAVE_CENTROIDS = False
 CENTROIDS_SAVE_PATH = "resultats/aaaaa.png"
 SAVE_PDF = False

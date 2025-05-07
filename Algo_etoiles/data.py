@@ -42,23 +42,23 @@ def parse_database_file(filename):
     reader = csv.reader(csv_data_base, delimiter=',')
 
     data_base = [types_perso.Star(                      #construction de DATA_BASE: liste d'objets de type Star
-                    int(row[0]),           #id
-                    intbis(row[1]),        #hip
-                    strbis(row[2]),        #bayer
-                    strbis(row[3]),        #flam
-                    str(row[4]),           #const
-                    strbis(row[5]),        #proper
-                    float(row[6]),         #ra
-                    float(row[7]),         #dec
-                    float(row[8]),         #mag
-                    strbis(row[11]),       #greek unicode
-                    float(row[12]),          #x
-                    float(row[13]),          #y
-                    float(row[14]),          #z
-                    str(row[15]),          #tfl
-                    [float(row[i]) for i in range(16,28)],     #dtf
-                    strbis(row[28]),       #wiki
-                    strbis(row[29]),       #simbad
+                    id=int(row[0]),
+                    hip=intbis(row[1]),
+                    bayer=strbis(row[2]),
+                    flam=strbis(row[3]),
+                    con=str(row[4]),
+                    proper=strbis(row[5]),
+                    ra=float(row[6]),
+                    dec=float(row[7]),
+                    mag=float(row[8]),
+                    full=strbis(row[9]),
+                    gen=strbis(row[10]),
+                    greek_bay=strbis(row[11]),
+                    x=float(row[12]),
+                    y=float(row[13]),
+                    z=float(row[14]),
+                    tfl=str(row[15]),
+                    dtf=[float(row[i]) for i in range(16,28)],
                     ) for row in reader]
 
     csv_data_base.close()
