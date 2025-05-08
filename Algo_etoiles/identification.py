@@ -1,4 +1,3 @@
-import config
 
 def dtf_diff(dtf1, dtf2): #cf. eq(6) de https://www.mdpi.com/1424-8220/20/11/3027
     return sum([abs(dtf1[i] - dtf2[i]) for i in range(12)])

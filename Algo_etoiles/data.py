@@ -1,7 +1,5 @@
 import csv
-import config
 import types_perso
-from random import randint
 
 def intbis(s):
     return None if (s=='' or s=='#N/A') else int(s)

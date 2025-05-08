@@ -4,15 +4,16 @@ import csv
 import random
 
 import config
-import types_perso
 import display
 import data
 import geometry
 import identification
-import img_fnc as img_fnc
+import cmlcm
 import kdtree
 
-#ALGORITHME: https://www.mdpi.com/1424-8220/20/11/3027
+#ALGORITHMES: 
+# https://www.mdpi.com/1424-8220/20/11/3027 MVDT-SI
+# https://www.mdpi.com/2304-6732/9/1/13 CMLCM
 
 #Traitement image:
 
@@ -21,23 +22,12 @@ img_grayscale = img_original.convert('L')
 
 img_size = img_width, img_height = img_original.size
 
-if config.CONVOLUTION_OR_NOT == True:
-    img_treated = img_fnc.convolve(img_grayscale, img_width, img_height, img_fnc.MAT)
-    img_treated.show()
-else:
-    img_treated = img_grayscale
-
-img_nb = img_treated.point(img_fnc.pixel_to_NB, mode='1')
+img_nb =  (cmlcm.cmlcmtotal(img_grayscale, img_width, img_height, config.BLOCKSIZE, config.S, config.L) if config.CMLCM_OR_NOT
+           else img_grayscale.point(lambda px: 1 if px>config.BLACK_WHITE_THRESHOLD else 0, mode='1'))
 
 img_nb.show()
 
-image_temp = img_nb.copy() #utile car la fonction "new_star" a besoin de modifier l'image
-LISTE_ETOILES_IMAGE = []
-for y in range(img_height): #remplit la liste des coordonnéees des étoiles sur l'image
-    for x in range(img_width):
-        if image_temp.getpixel((x,y)) == 1:
-            img_fnc.new_star(image_temp, (x,y), LISTE_ETOILES_IMAGE)
-
+LISTE_ETOILES_IMAGE = cmlcm.star_list(img_nb, img_width, img_height)
 
 #Import BDD
 

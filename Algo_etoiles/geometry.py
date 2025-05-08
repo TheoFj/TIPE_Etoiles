@@ -1,6 +1,4 @@
 from math import*
-import types_perso
-import config
 import kdtree
 import heapq
 
