@@ -69,15 +69,11 @@ def affiche_resultat_pillow(liste_etoiles_image, image_original, size, constella
         draw_name_pillow(et1, green_draw, red_draw)
         #affichage constellations:
         if et1.starmatch != None:
-            con = et1.starmatch.con
-            hip1 = et1.starmatch.hip
-            n = constellations[con][0]
-            l = constellations[con][1]
+            (n, l) = constellations[et1.starmatch.con]
             for et2 in liste_etoiles_image:
                 if et2.starmatch != None:
-                    hip2 = et2.starmatch.hip
                     for i in range(n):
-                        if l[i] == (hip1,hip2):
+                        if l[i] == (et1.starmatch.hip,et2.starmatch.hip):
                             green_draw.line((et1.x, et1.y, et2.x, et2.y), 1, width = 1)
 
     green_layer2 = Image.new("RGBA", size, (0,0,0,0))

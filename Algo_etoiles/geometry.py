@@ -1,10 +1,8 @@
 from math import*
 import kdtree
 import heapq
-
-#certaines fonctions ne sont pas utilisees
-
 #fonctions sur vecteurs de dimension 2
+
 def dot_prod2(u, v):
     return u[0]*v[0] + u[1]*v[1]
 def norm2(v):
@@ -29,15 +27,7 @@ def norm3_sqr(v):
     return v[0]**2 + v[1]**2 + v[2]**2
 
 #angles
-def ang_dist(Star1, Star2): #https://en.wikipedia.org/wiki/Angular_distance
-    p = dot_prod3(Star1.pos, Star2.pos)
-    if p>1: #gère les imprecisions de calcul genre 1.0000000000000002
-        return 0.0
-    elif p<-1:
-        return pi
-    return acos(p)
-
-def angle_2d(v1,v2, norm_prod):
+def angle_2d(v1, v2, norm_prod):
     costheta = dot_prod2(v1,v2)/norm_prod
     if costheta>1: #gere les imprecisions de calcul genre 1.0000000000000002
         return 0.0
@@ -55,11 +45,7 @@ def calcul_double_triangle_feature(M0, M1, M2, M3):
     v03 = vectpp(M0, M3); v30 = (-v03[0],-v03[1])
     v21 = vectpp(M2, M1); v12 = (-v21[0],-v21[1])
     v23 = vectpp(M2, M3); v32 = (-v23[0],-v23[1])
-    n01 = norm2(v01)
-    n02 = norm2(v02)
-    n03 = norm2(v03)
-    n21 = norm2(v21)
-    n32 = norm2(v32)
+    n01 = norm2(v01); n02 = norm2(v02); n03 = norm2(v03); n21 = norm2(v21); n32 = norm2(v32)
     return [angle_2d(v21, v20, n21*n02), angle_2d(v10, v12, n21*n01), 
             angle_2d(v01, v02, n01*n02), angle_2d(v30, v32, n03*n32), 
             angle_2d(v23, v20, n32*n02), angle_2d(v03, v02, n03*n02), 
@@ -67,6 +53,53 @@ def calcul_double_triangle_feature(M0, M1, M2, M3):
 
 def calcul_total_feature_length(dtf):
     return sum([dtf[i] for i in range(6,12)])
+
+def proj(star, D0):
+    #PROJECTION SUR LE PLAN TANGEANT AU CERCLE UNITE
+    #permet de simuler une photo prise par un capteur plan
+    p = dot_prod3(D0.pos, star.pos)
+    return (star.x/p - D0.x), (star.y/p - D0.y), (star.z/p - D0.z)
+
+def calcul_gnomic_dtf_tfl(D0, star_list, tree, L2):
+    '''
+    Calculs à faire sur chaque étoile de la base donnée, 
+    à exécuter avant pour ne pas refaire ces calculs (indépendants de l'image) à chaque image.
+    '''
+    # (cf. https://www.mdpi.com/1424-8220/20/11/3027 section 4.2)
+
+    nearest_3 = kdtree.nearest_nstars(tree, D0.pos, n=3, dim=3, dir=0, withtarget=False)
+    D3 = heapq.heappop(nearest_3)[2]
+    D2 = heapq.heappop(nearest_3)[2]
+    D1 = heapq.heappop(nearest_3)[2]
+
+    # (E1, E2) est la nouvelle base dans laquelle sont exprimees les coordonnes des etoiles projetees
+    # permet d'aligner les systemes de coordonnees basee de donnee/image afin d'avoir des donnees comparables
+    E1 = proj(D1, D0)
+    E2 = cross_prod3(D0.pos, E1) #rotation de pi/2 de E1
+    k = norm3_sqr(E1)
+
+    L = []
+    for star in star_list:
+        p = dot_prod3(D0.pos, star.pos)
+        proj_vect = proj(star, D0)
+        if p>0 and norm3_sqr(proj_vect) < L2: #condition pour ne pas prendre des etoiles trop eloignees ou bien derriere la Terre
+            L.append((star, (dot_prod3(proj_vect, E1)/k, dot_prod3(proj_vect, E2)/k)))
+    
+    M0 = (0., 0.)
+    M1 = (1., 0.)
+    p2 = proj(D2, D0)
+    p3 = proj(D3, D0)
+    M2 = (dot_prod3(p2, E1)/k, dot_prod3(p2, E2)/k)
+    M3 = (dot_prod3(p3, E1)/k, dot_prod3(p3, E2)/k)
+
+
+    dtf = calcul_double_triangle_feature(M0, M1, M2, M3)
+    
+    #Enregistrement dans l'objet Star D0
+    D0.gnomic_projection_map = L
+    D0.double_triangle_feature = dtf
+    D0.total_feature_length = calcul_total_feature_length(dtf)
+    return
 
 def calcul_gnomic(starA, starB, star_list):
 
@@ -77,39 +110,15 @@ def calcul_gnomic(starA, starB, star_list):
     for star in star_list:
         p = dot_prod3(starA.pos, star.pos)
         if p>0:
-            proj_vect = (star.x/p - starA.x), (star.y/p - starA.y), (star.z/p - starA.z)
+            proj_vect = proj(star, starA)
             C.append((star, proj_vect))
 
     #CHANGEMENT DE BASE
-    pAB = dot_prod3(starA.pos, starB.pos)
-    E1 = (starB.x/pAB - starA.x), (starB.y/pAB - starA.y), (starB.z/pAB - starA.z)
+    E1 = proj(starB,starA)
     E2 = cross_prod3(starA.pos, E1) #rotation de pi/2 de E1
     k = norm3_sqr(E1)
 
-    L = [(starandvect[0], (dot_prod3(starandvect[1], E1)/k, dot_prod3(starandvect[1], E2)/k)) for starandvect in C]
-
-    return L
-
-
-def changement_image_vers_normalise(M0, M1, image_star_list):
-    #Normalisation de la liste des coordonnees des etoiles en fonction de deux points/etoiles de l'image
-    E1 = vectpp(M0.pos, M1.pos)
-    E2 = (-E1[1], E1[0])
-    k = norm2_sqr(E1)
-    return [(etoile, (dot_prod2(vectpp(M0.pos, etoile.pos), E1)/k, dot_prod2(vectpp(M0.pos, etoile.pos), E2)/k)) for etoile in image_star_list]
-
-def changement_normalise_vers_image(M0, M1, map):
-    #Calcul des coordonnées sur l'image d'une liste de coordonnées normalsiées
-    E1 = vectpp(M0.pos, M1.pos)
-    E2 = (-E1[1], E1[0])
-
-    L=[]
-    for starandvect in map:
-        x = E1[0]*starandvect[1][0] + E2[0]*starandvect[1][1] + M0.x
-        y = E1[1]*starandvect[1][0] + E2[1]*starandvect[1][1] + M0.y
-        L.append((x,y))
-    return L
-
+    return [(starandvect[0], (dot_prod3(starandvect[1], E1)/k, dot_prod3(starandvect[1], E2)/k)) for starandvect in C]
 
 def calcul_map_dtf_tfl_2d(M0, liste_etoiles_image, tree):
     '''
@@ -126,7 +135,6 @@ def calcul_map_dtf_tfl_2d(M0, liste_etoiles_image, tree):
     E2 = (-E1[1], E1[0])
     k = norm2_sqr(E1)
 
-    #PROJECTIONS DANS LE NOUVEAU REPERE
     L = [(M, (dot_prod2(vectpp(M0.pos, M.pos), E1)/k, dot_prod2(vectpp(M0.pos, M.pos), E2)/k)) for M in liste_etoiles_image]
 
     N0 = (0., 0.)       
@@ -140,4 +148,17 @@ def calcul_map_dtf_tfl_2d(M0, liste_etoiles_image, tree):
     M0.F1_length = calcul_total_feature_length(F1)
     M0.F2_length = calcul_total_feature_length(F2)
     M0.normalized_map = L
-    return
+
+def changement_image_vers_normalise(M0, M1, image_star_list):
+    #Normalisation de la liste des coordonnees des etoiles en fonction de deux points/etoiles de l'image
+    E1 = vectpp(M0.pos, M1.pos)
+    E2 = (-E1[1], E1[0])
+    k = norm2_sqr(E1)
+    return [(M, (dot_prod2(vectpp(M0.pos, M.pos), E1)/k, dot_prod2(vectpp(M0.pos, M.pos), E2)/k)) for M in image_star_list]
+
+def changement_normalise_vers_image(M0, M1, map):
+    #Calcul des coordonnées sur l'image d'une liste de coordonnées normalsiées
+    E1 = vectpp(M0.pos, M1.pos)
+    E2 = (-E1[1], E1[0])
+
+    return [(E1[0]*starandvect[1][0] + E2[0]*starandvect[1][1] + M0.x, E1[1]*starandvect[1][0] + E2[1]*starandvect[1][1] + M0.y) for starandvect in map]
