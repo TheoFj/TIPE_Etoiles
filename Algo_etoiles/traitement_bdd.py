@@ -3,9 +3,10 @@ import csv
 import geometry
 import types_perso
 import kdtree
-import heapq
 
-#LIRE https://www.mdpi.com/1424-8220/20/11/3027
+FOV = 50
+L = FOV*pi/180 #fov en radians 
+L2 = (L**2)/2 #rayon du disque des etoiles prises en compte dans "calcul_gnomic_dtf_tfl" (cf. 4.1 https://www.mdpi.com/1424-8220/20/11/3027)
 
 """
 CONSTANTES

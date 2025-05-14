@@ -40,7 +40,6 @@ CON_DIC = data.parse_constellation_file(config.CON_DIC_PATH)
 LISTE_ETOILES_REF = LISTE_ETOILES_IMAGE
 
 TREE = kdtree.build_tree(LISTE_ETOILES_IMAGE, dim=2, dir=0)
-
 for etoile in LISTE_ETOILES_REF:
     geometry.calcul_map_dtf_tfl_2d(etoile, LISTE_ETOILES_IMAGE, TREE)
 
@@ -59,7 +58,6 @@ for etoile in LISTE_ETOILES_REF:
     if r_score > bestr_score:
         bestr_score, bestmatchlist, bestcentral_star, bestmatch = r_score, matchlist, D02, etoile 
 
-
 #chargement des etoiles depuis la bdd
 bestmatchlist = [(data.get_by_attribute(DATA_BASE, "id", starid), etoile) for (starid, etoile) in bestmatchlist]
 print(f"R_score avant iterations : {bestr_score}")
@@ -71,12 +69,10 @@ for i in range(config.N_ITE):
         mapbdd = geometry.calcul_gnomic(starA, starB, DATA_BASE)
         newr_score, newmatchlist = identification.match_maps(imgmap, mapbdd, config.ID_THRESHOLD2)
         if newr_score > bestr_score:
-            #bestA = 
-            #bestB = 
             bestr_score = newr_score
-            bestmatchlist = newmatchlist #coût caché
-            bestcentral_star = starA # bzr ici faudrait inverser c pas logique mais ca marche comme ca
-            bestmatch = etoileA # bzr ici faudrait inverser c pas logique mais ca marche comme ca
+            bestmatchlist = newmatchlist 
+            bestcentral_star = starA
+            bestmatch = etoileA
 
 print(f"R_score apres iterations: {bestr_score}")
 
@@ -84,19 +80,10 @@ for (star, etoile) in bestmatchlist:
     star.imagematch = etoile
     etoile.starmatch = star
 
-bestmap = geometry.calcul_gnomic(starA, starB, DATA_BASE)#recalcul mais flm pg
-'''REFAIRE LA BACKPROJ'''
-#back_projection = display.affiche_etoiles(geometry.changement_normalise_vers_image(bestmatch, bestmatch.closest_star, bestcentral_star.gnomic_projection_map), bestmatch, img_size, img_original)
-
 results = display.affiche_resultat_pillow(LISTE_ETOILES_IMAGE, img_original, img_size, CON_DIC)
-
-
-#back_projection.show() #Projection de la base de données sur l'image: permet de voir la difference et les erreurs de positionnement de la projection
 results.show() #Correspondances trouvées
 
-
 #Sauvegarde
-
 if config.SAVE_CENTROIDS:
     img_withcentroids = display.display_centroids(LISTE_ETOILES_IMAGE, img_original, img_size)
     img_withcentroids.show("Centroïdes des étoiles repérées")

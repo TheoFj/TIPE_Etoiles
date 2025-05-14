@@ -15,16 +15,6 @@ def affiche_etoiles(L, central, size, image_original):
     drawing_instance.ellipse((xc-r,yc-r,xc+r,yc+r), outline = (255, 0, 255, 255), width = 2)
     return Image.alpha_composite(image_copy, layer)
 
-def drawmap(map):
-    #affiche un aperçu des etoiles dans le repere normalisé autour d'une etoile
-    img = Image.new('1',(300,300),0)
-    for starandvect in map:
-        x,y = round(starandvect[1][0]*30+150), round(starandvect[1][1]*30+150)
-        if 0<=x<300 and 0<=y<300:
-            img.putpixel((x,y), 1)
-    img.show()
-
-
 #CENTROIDES
 
 def display_centroids(liste_etoiles_image, image_original, size):

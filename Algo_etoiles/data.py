@@ -69,7 +69,3 @@ def get_by_attribute(data_base, attribute, val):
         return next((star for star in data_base if star.id == val), [None])
     elif attribute == "hip":
         return next((star for star in data_base if star.hip == val), [None])
-
-
-def choose_random(liste_etoiles, lambd): #a coder: si trop d'etoiles sur l'image, on en choisit lambda pour reduire le temps
-    pass

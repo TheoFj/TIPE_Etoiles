@@ -12,7 +12,7 @@ def pix_list_of_star(image, pos, pixel_list): #détecte tous les pixels blancs "
     width,height = image.size
     for i in [+1,0,-1]:
         for j in [+1,0,-1]:
-            if 0<=x+i<width and 0<=y+j<height and image.getpixel((x+i,y+j)) == 1: #le pixel central a déjà été colorié en noir
+            if 0<=x+i<width and 0<=y+j<height and image.getpixel((x+i,y+j)) == 1:
                 pix_list_of_star(image, (x+i,y+j), pixel_list)
     return pixel_list
 
@@ -48,11 +48,6 @@ W6 = (1/70)*np.array([[ 2, 2, 2, 2, 2],
                       [-1,-1,-1,-1,-1],
                       [ 2, 2, 2, 2, 2]])
 
-mat0 = 2*W6
-mat45 = W4+W5+W6
-mat90 = 2*W4
-mat135 = W4-W5+W6
-
 MEAN = 1/9*np.array([[1, 1, 1],
                      [1, 1, 1],
                      [1, 1, 1]])
@@ -65,6 +60,9 @@ def block(var, min, max):
     if var<min: return 0
     elif var>=max: return max-1
     return var
+
+def is_in(x,y,width,height):
+    return (0<=x<width and 0<=y<height)
 
 def convolve_np(image, width, height, mat, matsize):
     output = np.array([[0. for j in range(height)] for i in range(width)])
@@ -105,9 +103,6 @@ def calculate_SIG(image, width, height):
             sig[x][y] = (f_m[x][y]/image[x][y]) if (f_m[x][y]<image[x][y]) else (1/10)
     return sig
 
-def is_in(x,y,width,height):
-    return (0<=x<width and 0<=y<height)
-
 def calculate_En(P, sig, width, height, dx, dy):
     En = np.array([[0. for y in range(height)] for x in range(width)])
     for x in range(width):
@@ -124,7 +119,6 @@ def calculate_En(P, sig, width, height, dx, dy):
             else:
                 En[x][y] = (P2-P0+P3)/100 if (P2-P0+P3>0) else 0
     return En
-
 
 def calculate_cmlcm(image, width, height): #L'image importee doit être en grayscale numpy
     Q4 = convolve_np(convolve_np(image, width, height, W4, 5), width, height, MEAN, 3) #On met le flou 3x3 dès maintenant car il y en a besoin après
